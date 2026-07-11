@@ -5,114 +5,129 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>E1003 Calendar</title>
   <style>
-    :root{--bg:#fff;--line:#d8d8d8;--text:#111;--event:#efefef;--today:#111}
+    :root{--bg:#fff;--line:#d8d8d8;--text:#111;--event:#efefef;--today:#0066cc}
     *{box-sizing:border-box}
     html,body{margin:0;width:100%;height:100%;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
     body{display:flex;flex-direction:column;min-height:100vh}
-    .topbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 10px;border-bottom:1px solid var(--line)}
-    .title{font-size:32px;font-weight:700;line-height:1}
     
-    .month-switcher{display:flex;gap:12px}
-    .month-switcher a{font-size:16px;color:#0066cc;text-decoration:none;font-weight:bold;padding:6px 10px;border:1px solid #0066cc;border-radius:4px;background:#fff}
-    .month-switcher a.active{background:#0066cc;color:#fff}
+    .topbar{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line)}
+    .title{font-size:28px;font-weight:700}
+    .nav-btn{font-size:24px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#f5f5f5}
 
-    .calendar{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:56px repeat(5,1fr);flex:1;min-height:0}
+    .calendar{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:48px repeat(6,1fr);flex:1;min-height:0}
     .dow,.cell{border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
     .dow:nth-child(7),.cell:nth-child(7n){border-right:none}
-    .dow{display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;letter-spacing:.2px;background:#fafafa;color:#333}
-    .cell{position:relative;padding:10px 10px 8px;min-height:0;overflow:hidden}
-    .date{font-size:22px;font-weight:600;line-height:1;color:var(--text);text-align:center;width:100%;display:block}
-    .other .date{color:#9a9a9a}
-    .today .date-badge{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;padding:0 8px;border-radius:999px;background:var(--today);color:#fff;margin:0 auto}
-    .events{margin-top:8px;display:flex;flex-direction:column;gap:4px}
-    .event{background:var(--event);border:1px solid #cfcfcf;border-radius:8px;padding:6px 8px;line-height:1.15;overflow:hidden}
-    .event-line{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
-    .event-time,.event-title{font-size:18px;font-weight:700;line-height:1;white-space:nowrap}
+    .dow{display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;background:#fafafa;color:#333}
+
+    .cell{position:relative;padding:8px 6px;min-height:0;overflow:hidden;cursor:pointer}
+    .date{font-size:20px;font-weight:600;text-align:center;display:block;margin-bottom:4px}
+    .other .date{color:#aaa}
+    .today .date{background:var(--today);color:#fff;width:32px;height:32px;line-height:32px;border-radius:50%;margin:0 auto}
+
+    .events{margin-top:4px;display:flex;flex-direction:column;gap:3px}
+    .event{background:var(--event);border:1px solid #ddd;border-radius:6px;padding:5px 7px;font-size:15px;line-height:1.2;overflow:hidden}
+    .event-time{font-weight:700;color:#0066cc}
   </style>
 </head>
 <body>
   <header class="topbar">
-    <div class="title" id="mTitle">July 2026</div>
-    <!-- 點擊直接跳轉並帶入月份參數 -->
-    <div class="month-switcher">
-      <a href="?m=7" id="btn07">7月</a>
-      <a href="?m=8" id="btn08">8月</a>
-      <a href="?m=9" id="btn09">9月</a>
-    </div>
+    <button class="nav-btn" id="prev">‹</button>
+    <div class="title" id="monthTitle">2026 年 7 月</div>
+    <button class="nav-btn" id="next">›</button>
   </header>
 
-  <main class="calendar" aria-label="Monthly calendar">
-    <div class="dow">Sun</div><div class="dow">Mon</div><div class="dow">Tue</div><div class="dow">Wed</div><div class="dow">Thu</div><div class="dow">Fri</div><div class="dow">Sat</div>
-    <!-- 完全保留你原來的 42 個靜態格子 HTML 結構 -->
-    <section class="cell"></section><section class="cell"></section><section class="cell"></section><section class="cell"></section><section class="cell"></section><section class="cell"></section><section class="cell"></section>
-    <section class="cell"></section><section class="cell"></section><section class="cell"></section><section class="cell"></section><section class="cell"></section><section class="cell"></section><section class="cell"></section>
-    <section class="cell"></section><section class="cell"></section><section class="cell"></section><section class="cell"></section><section class="cell"></section><section class="cell"></section><section class="cell"></section>
-    <section class="cell"></section><section class="cell"></section><section class="cell"></section><section class="cell"></section><section class="cell"></section><section class="cell"></section><section class="cell"></section>
-    <section class="cell"></section><section class="cell"></section><section class="cell"></section><section class="cell"></section><section class="cell"></section><section class="cell"></section><section class="cell"></section>
-    <section class="cell"></section><section class="cell"></section><section class="cell"></section><section class="cell"></section><section class="cell"></section><section class="cell"></section><section class="cell"></section>
-  </main>
+  <main class="calendar" id="calendar" aria-label="Calendar"></main>
 
   <script>
     const CALENDAR_ID = 'dcyt122024@gmail.com';
-    const API_KEY = 'AIzaSyAUhbzcmS9bdGjTwxNmi3RP2MuuOK7U-Io';
+    const API_KEY = 'AIzaSyAUhbzcmS9bdGjTwxNmi3RP2MuuOK7U-Io';   // ←←← 在這裡貼上你的 Google API Key
 
-    // 1. 取得網址月份參數 (?m=7, ?m=8, ?m=9)
-    const urlParams = new URLSearchParams(window.location.search);
-    const mParam = urlParams.get('m') || '7'; 
-    
-    let targetMonth = 6; // 預設 6 代表 7月
-    let gridStartDate = new Date(2026, 5, 28); // 7月網格從 6/28 開始
-    
-    if (mParam === '8') { 
-      targetMonth = 7; 
-      document.getElementById('mTitle').textContent = 'August 2026';
-      document.getElementById('btn08').className = 'active';
-      gridStartDate = new Date(2026, 6, 26); // 8月網格的第一個星期日是 7/26
-    } else if (mParam === '9') { 
-      targetMonth = 8; 
-      document.getElementById('mTitle').textContent = 'September 2026';
-      document.getElementById('btn09').className = 'active';
-      gridStartDate = new Date(2026, 7, 30); // 9月網格的第一個星期日是 8/30
-    } else {
-      document.getElementById('mTitle').textContent = 'July 2026';
-      document.getElementById('btn07').className = 'active';
+    let currentDate = new Date(2026, 6, 1);   // 預設 2026 年 7 月
+
+    function formatMonthTitle(date) {
+      return `${date.getFullYear()} 年 ${date.getMonth() + 1} 月`;
     }
 
-    // 2. 在不刪除、不新增格子的前提下，用最純粹的方式更新現有格子的「日期數字」與「Map對照鍵」
-    const cellMap = new Map();
-    const cells = [...document.querySelectorAll('.cell')];
-    const today = new Date();
+    function getDaysInMonth(year, month) {
+      return new Date(year, month + 1, 0).getDate();
+    }
 
-    cells.forEach((cell, i) => {
-      const dt = new Date(gridStartDate);
-      dt.setDate(gridStartDate.getDate() + i);
+    function generateCalendar() {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
       
-      // 設定 Map 用的 key
-      const k = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
-      cellMap.set(k, cell);
+      document.getElementById('monthTitle').textContent = formatMonthTitle(currentDate);
 
-      // 判斷是否為「今天」或「非本月」來給予正確的樣式標籤
-      let isToday = dt.getFullYear() === today.getFullYear() && dt.getMonth() === today.getMonth() && dt.getDate() === today.getDate();
-      
-      if (dt.getMonth() !== targetMonth) {
-        cell.className = 'cell other';
-      } else if (isToday) {
-        cell.className = 'cell today';
-      } else {
-        cell.className = 'cell';
+      const firstDay = new Date(year, month, 1).getDay(); // 星期幾
+      const daysInMonth = getDaysInMonth(year, month);
+      const daysInPrevMonth = getDaysInMonth(year, month - 1);
+
+      const calendar = document.getElementById('calendar');
+      calendar.innerHTML = '';
+
+      // 星期標題
+      const days = ['日','一','二','三','四','五','六'];
+      days.forEach(d => {
+        const div = document.createElement('div');
+        div.className = 'dow';
+        div.textContent = d;
+        calendar.appendChild(div);
+      });
+
+      // 上個月的剩餘日期
+      for (let i = firstDay - 1; i >= 0; i--) {
+        const cell = createCell(daysInPrevMonth - i, true);
+        calendar.appendChild(cell);
       }
 
-      // 刷入日期數字 (如果是今天就加上 badge 框)
-      const dateHtml = isToday ? `<span class="date-badge">${dt.getDate()}</span>` : dt.getDate();
-      cell.innerHTML = `<div class="date">${dateHtml}</div>`;
-    });
+      // 本月日期
+      for (let day = 1; day <= daysInMonth; day++) {
+        const cell = createCell(day, false, year, month);
+        calendar.appendChild(cell);
+      }
 
-    // 3. 執行你最穩定的原始 API 抓取與塞入邏輯 (完全沒變)
-    const fmtTime = d => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      // 下個月的補位
+      const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+      const remaining = totalCells - (firstDay + daysInMonth);
+      for (let day = 1; day <= remaining; day++) {
+        const cell = createCell(day, true);
+        calendar.appendChild(cell);
+      }
+    }
+
+    function createCell(day, isOtherMonth, year = null, month = null) {
+      const cell = document.createElement('section');
+      cell.className = `cell ${isOtherMonth ? 'other' : ''}`;
+      
+      const dateDiv = document.createElement('div');
+      dateDiv.className = 'date';
+      dateDiv.textContent = day;
+      cell.appendChild(dateDiv);
+
+      // 今天標記
+      const today = new Date();
+      if (!isOtherMonth && 
+          year === today.getFullYear() && 
+          month === today.getMonth() && 
+          day === today.getDate()) {
+        cell.classList.add('today');
+      }
+
+      return cell;
+    }
 
     async function loadEvents() {
-      const timeMin = new Date(2026, targetMonth, 1).toISOString();
-      const timeMax = new Date(2026, targetMonth + 1, 1).toISOString();
+      if (!API_KEY || API_KEY === '你的 API Key') {
+        console.warn('請填入 Google API Key');
+        return;
+      }
+
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      
+      const timeMin = new Date(year, month, 1).toISOString();
+      const timeMax = new Date(year, month + 1, 1).toISOString();
+
       const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events`);
       url.searchParams.set('key', API_KEY);
       url.searchParams.set('timeMin', timeMin);
@@ -121,42 +136,85 @@
       url.searchParams.set('orderBy', 'startTime');
       url.searchParams.set('maxResults', '250');
 
-      const res = await fetch(url.toString());
-      if (!res.ok) throw new Error('Google Calendar API error');
-      const data = await res.json();
-      const grouped = new Map();
+      try {
+        const res = await fetch(url.toString());
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        
+        const data = await res.json();
+        const grouped = new Map();
 
-      (data.items || []).forEach(ev => {
-        const start = ev.start.dateTime || ev.start.date;
-        const day = start.slice(0, 10);
-        if (!grouped.has(day)) grouped.set(day, []);
-        grouped.get(day).push(ev);
-      });
-
-      for (const [day, items] of grouped.entries()) {
-        const cell = cellMap.get(day);
-        if (!cell) continue;
-        let container = cell.querySelector('.events');
-        if (!container) {
-          container = document.createElement('div');
-          container.className = 'events';
-          cell.appendChild(container);
-        }
-        container.innerHTML = '';
-        items.slice(0, 3).forEach(ev => {
+        (data.items || []).forEach(ev => {
           const start = ev.start.dateTime || ev.start.date;
-          const end = ev.end.dateTime || ev.end.date;
-          const t1 = ev.start.dateTime ? fmtTime(new Date(start)) : 'All day';
-          const t2 = ev.start.dateTime ? fmtTime(new Date(end)) : '';
-          const article = document.createElement('article');
-          article.className = 'event';
-          article.innerHTML = `<div class="event-line"><span class="event-time">${t1}${t2 ? '-' + t2 : ''}</span><span class="event-title">${ev.summary || '(No title)'}</span></div>`;
-          container.appendChild(article);
+          const dayKey = start.slice(0, 10);
+          if (!grouped.has(dayKey)) grouped.set(dayKey, []);
+          grouped.get(dayKey).push(ev);
         });
+
+        // 把事件塞進對應格子
+        grouped.forEach((events, dayKey) => {
+          const day = parseInt(dayKey.slice(8, 10));
+          const cells = document.querySelectorAll('.cell:not(.other)');
+          const cell = Array.from(cells).find(c => {
+            const d = parseInt(c.querySelector('.date').textContent);
+            return d === day;
+          });
+
+          if (cell) {
+            let container = cell.querySelector('.events');
+            if (!container) {
+              container = document.createElement('div');
+              container.className = 'events';
+              cell.appendChild(container);
+            }
+            container.innerHTML = '';
+
+            events.slice(0, 3).forEach(ev => {
+              const startTime = ev.start.dateTime ? new Date(ev.start.dateTime) : null;
+              const endTime = ev.end.dateTime ? new Date(ev.end.dateTime) : null;
+              
+              const timeStr = startTime 
+                ? `${startTime.getHours().toString().padStart(2,'0')}:${startTime.getMinutes().toString().padStart(2,'0')}` 
+                : '全天';
+
+              const article = document.createElement('article');
+              article.className = 'event';
+              article.innerHTML = `
+                <span class="event-time">${timeStr}</span> 
+                ${ev.summary || '(無標題)'}
+              `;
+              container.appendChild(article);
+            });
+          }
+        });
+      } catch (e) {
+        console.error('載入事件失敗:', e);
       }
     }
 
-    loadEvents().catch(() => {});
+    // 切換月份
+    function changeMonth(delta) {
+      currentDate.setMonth(currentDate.getMonth() + delta);
+      generateCalendar();
+      loadEvents();
+    }
+
+    document.getElementById('prev').addEventListener('click', () => changeMonth(-1));
+    document.getElementById('next').addEventListener('click', () => changeMonth(1));
+
+    // 初始化
+    generateCalendar();
+    loadEvents();
+
+    // 支援左右滑動切換（觸控）
+    let touchStartX = 0;
+    document.getElementById('calendar').addEventListener('touchstart', e => {
+      touchStartX = e.changedTouches[0].screenX;
+    });
+    document.getElementById('calendar').addEventListener('touchend', e => {
+      const touchEndX = e.changedTouches[0].screenX;
+      if (touchEndX - touchStartX > 80) changeMonth(-1);
+      if (touchStartX - touchEndX > 80) changeMonth(1);
+    });
   </script>
 </body>
 </html>
