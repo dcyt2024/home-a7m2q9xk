@@ -19,7 +19,7 @@
     .dow{display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;letter-spacing:.2px;background:#fafafa;color:#333}
     .cell{position:relative;padding:8px 10px 8px;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:6px}
     
-    /* 保留 cell 容器與邊框線，只隱藏內部的所有元件 */
+    /* 保留邊框線，隱藏非本月內容 */
     .other.hidden-month * { display: none; }
     
     .date{font-size:22px;font-weight:600;line-height:1;color:var(--text);text-align:center;width:100%;display:block;flex:0 0 auto}
@@ -31,7 +31,7 @@
     .event-time{font-size:14px;font-weight:700;color:#555;line-height:1.1;white-space:nowrap}
     .event-title{font-size:14px;font-weight:700;line-height:1.1;word-break:break-word}
     
-    .debug{font-size:14px;padding:6px 10px;border-top:1px solid var(--line);background:#fff;color:#444}
+    .debug{font-size:14px;padding:6px 10px;border-top:1px solid var(--line);background:#fff;color:#444;word-break:break-all}
   </style>
 </head>
 <body tabindex="0">
@@ -46,97 +46,123 @@
   <div class="debug" id="debug">Ready</div>
 
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyiMdCmH_4MoCpOGkt4flb0luLreIjWh8NA3g7pEmbFaRbuG9P18kNF1Fqmy0L8sbjR/exec';
-    const monthTitle = document.getElementById('monthTitle');
-    const calendar = document.getElementById('calendar');
-    const debug = document.getElementById('debug');
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    let viewDate = new Date();
+    // ⚠️ 請記得在此處填入您的 Google Apps Script 網址
+    var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyiMdCmH_4MoCpOGkt4flb0luLreIjWh8NA3g7pEmbFaRbuG9P18kNF1Fqmy0L8sbjR/exec';
+    
+    var monthTitle = document.getElementById('monthTitle');
+    var calendar = document.getElementById('calendar');
+    var debug = document.getElementById('debug');
+    var prevBtn = document.getElementById('prevBtn');
+    var nextBtn = document.getElementById('nextBtn');
+    var viewDate = new Date();
     viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
-    const pad = n => String(n).padStart(2, '0');
-    const keyOf = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    const monthLabel = d => d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
-    const startOfMonth = d => new Date(d.getFullYear(), d.getMonth(), 1);
-    const isToday = d => { const t = new Date(); return d.getFullYear()===t.getFullYear() && d.getMonth()===t.getMonth() && d.getDate()===t.getDate(); };
+    
+    var pad = function(n) { return String(n).length < 2 ? '0' + n : String(n); };
+    var keyOf = function(d) { return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); };
+    var monthLabel = function(d) { return d.toLocaleString('en-US', { month: 'long', year: 'numeric' }); };
+    var startOfMonth = function(d) { return new Date(d.getFullYear(), d.getMonth(), 1); };
+    var isToday = function(d) { var t = new Date(); return d.getFullYear()===t.getFullYear() && d.getMonth()===t.getMonth() && d.getDate()===t.getDate(); };
     function setDebug(msg){ debug.textContent = msg; }
     
     function buildGrid(monthDate) {
       monthTitle.textContent = monthLabel(monthDate);
       calendar.innerHTML = '';
-      ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(x => { const el = document.createElement('div'); el.className = 'dow'; el.textContent = x; calendar.appendChild(el); });
-      const first = startOfMonth(monthDate);
-      const start = new Date(first);
+      ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(function(x) { 
+        var el = document.createElement('div'); el.className = 'dow'; el.textContent = x; calendar.appendChild(el); 
+      });
+      var first = startOfMonth(monthDate);
+      var start = new Date(first);
       start.setDate(first.getDate() - first.getDay());
-      for (let i = 0; i < 42; i++) {
-        const dt = new Date(start); dt.setDate(start.getDate() + i);
-        const cell = document.createElement('section');
+      for (var i = 0; i < 42; i++) {
+        var dt = new Date(start); dt.setDate(start.getDate() + i);
+        var cell = document.createElement('section');
         cell.className = 'cell' + (dt.getMonth() !== monthDate.getMonth() ? ' other hidden-month' : '') + (isToday(dt) ? ' today' : '');
         cell.dataset.date = keyOf(dt);
-        const dateDiv = document.createElement('div');
+        var dateDiv = document.createElement('div');
         dateDiv.className = 'date';
-        dateDiv.innerHTML = isToday(dt) ? `<span class="date-badge">${dt.getDate()}</span>` : `${dt.getDate()}`;
+        dateDiv.innerHTML = isToday(dt) ? '<span class="date-badge">' + dt.getDate() + '</span>' : dt.getDate();
         cell.appendChild(dateDiv);
-        const events = document.createElement('div');
+        var events = document.createElement('div');
         events.className = 'events';
         cell.appendChild(events);
         calendar.appendChild(cell);
       }
     }
     
-    async function loadEvents() {
-      // 修正：移除 cache: 'no-store'，改用傳統加 _t=時間戳記 參數的方式來強制重新抓取資料，避免舊型瀏覽器不支援拋出錯誤
-      const url = `${SCRIPT_URL}?year=${encodeURIComponent(viewDate.getFullYear())}&month=${encodeURIComponent(viewDate.getMonth()+1)}&_t=${new Date().getTime()}`;
+    function loadEvents() {
+      setDebug('Fetching data...');
+      var url = SCRIPT_URL + '?year=' + encodeURIComponent(viewDate.getFullYear()) + '&month=' + encodeURIComponent(viewDate.getMonth()+1) + '&_t=' + new Date().getTime();
       
-      try {
-        const res = await fetch(url);
-        const txt = await res.text();
-        if (!res.ok) throw new Error(`HTTP ${res.status}: ${txt.slice(0,120)}`);
-        
-        const data = JSON.parse(txt);
-        const grouped = new Map();
-        const eventsList = data.events || [];
-        
-        eventsList.forEach(ev => {
-          const day = (ev.start || '').slice(0, 10);
-          if (!grouped.has(day)) grouped.set(day, []);
-          grouped.get(day).push(ev);
-        });
-        
-        // 修正：將 Array spread [...cells] 改為傳統 Array.prototype.slice 確保舊核心相容
-        const cells = Array.prototype.slice.call(calendar.querySelectorAll('.cell'));
-        cells.forEach(cell => {
-          const day = cell.dataset.date;
-          const list = grouped.get(day) || [];
-          const container = cell.querySelector('.events');
-          container.innerHTML = '';
-          
-          list.slice(0, 3).forEach(ev => {
-            const start = ev.start ? new Date(ev.start) : null;
-            const end = ev.end ? new Date(ev.end) : null;
-            const fmt = d => d ? `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` : '';
-            const timeText = ev.allDay ? 'All day' : (start && end ? `${fmt(start)} - ${fmt(end)}` : '');
-            
-            const article = document.createElement('article');
-            article.className = 'event';
-            
-            const titleText = ev.title ? ev.title : '(No title)';
-            article.innerHTML = `<div class="event-time">${timeText}</div><div class="event-title">${titleText}</div>`;
-            container.appendChild(article);
-          });
-        });
-        setDebug('Loaded ' + monthLabel(viewDate));
-      } catch (e) {
-        setDebug('Load failed: ' + e.message);
-      }
+      // 終極修正：放棄 fetch，改用傳統 XMLHttpRequest 確保老舊瀏覽器 100% 相容
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', url, true);
+      
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              var data = JSON.parse(xhr.responseText);
+              renderEvents(data);
+              setDebug('Loaded ' + monthLabel(viewDate));
+            } catch (err) {
+              setDebug('JSON Parse Error: ' + err.message);
+            }
+          } else {
+            setDebug('HTTP Error Code: ' + xhr.status + ' - ' + xhr.statusText);
+          }
+        }
+      };
+      
+      xhr.onerror = function() {
+        setDebug('Network Error: Failed to send request. (Check CORS or network Connection)');
+      };
+      
+      xhr.send();
     }
     
-    async function refresh(){ buildGrid(viewDate); await loadEvents(); }
+    function renderEvents(data) {
+      var grouped = {};
+      var eventsList = data.events || [];
+      
+      for (var i = 0; i < eventsList.length; i++) {
+        var ev = eventsList[i];
+        var day = (ev.start || '').slice(0, 10);
+        if (!grouped[day]) grouped[day] = [];
+        grouped[day].push(ev);
+      }
+      
+      var cells = Array.prototype.slice.call(calendar.querySelectorAll('.cell'));
+      cells.forEach(function(cell) {
+        var day = cell.dataset.date;
+        var list = grouped[day] || [];
+        var container = cell.querySelector('.events');
+        container.innerHTML = '';
+        
+        var displayList = list.slice(0, 3);
+        displayList.forEach(function(ev) {
+          var start = ev.start ? new Date(ev.start) : null;
+          var end = ev.end ? new Date(ev.end) : null;
+          var fmt = function(d) { return d ? pad(d.getHours()) + ':' + pad(d.getMinutes()) : ''; };
+          var timeText = ev.allDay ? 'All day' : (start && end ? fmt(start) + ' - ' + fmt(end) : '');
+          
+          var article = document.createElement('article');
+          article.className = 'event';
+          var titleText = ev.title ? ev.title : '(No title)';
+          article.innerHTML = '<div class="event-time">' + timeText + '</div><div class="event-title">' + titleText + '</div>';
+          container.appendChild(article);
+        });
+      });
+    }
     
-    prevBtn.addEventListener('click', () => { viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1); refresh(); });
-    nextBtn.addEventListener('click', () => { viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1); refresh(); });
-    window.addEventListener('keydown', (e) => { if (e.key === 'ArrowLeft') prevBtn.click(); if (e.key === 'ArrowRight') nextBtn.click(); });
-    window.addEventListener('load', () => { refresh(); document.body.focus(); });
+    function refresh(){ 
+      buildGrid(viewDate); 
+      loadEvents(); 
+    }
+    
+    prevBtn.addEventListener('click', function() { viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1); refresh(); });
+    nextBtn.addEventListener('click', function() { viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1); refresh(); });
+    window.addEventListener('keydown', function(e) { if (e.key === 'ArrowLeft') prevBtn.click(); if (e.key === 'ArrowRight') nextBtn.click(); });
+    window.addEventListener('load', function() { refresh(); document.body.focus(); });
   </script>
 </body>
 </html>
