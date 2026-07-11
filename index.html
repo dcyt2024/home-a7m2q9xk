@@ -5,50 +5,47 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>E1003 Calendar</title>
   <style>
-    :root{--bg:#fff;--line:#d8d8d8;--text:#111;--event:#efefef;--today:#0066cc}
+    :root{--bg:#fff;--line:#d8d8d8;--text:#111;--event:#efefef;--today:#111}
     *{box-sizing:border-box}
     html,body{margin:0;width:100%;height:100%;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
     body{display:flex;flex-direction:column;min-height:100vh}
-    
-    .topbar{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line)}
-    .title{font-size:28px;font-weight:700}
-    .nav-btn{font-size:28px;width:50px;height:50px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#f0f0f0}
 
-    .calendar{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:48px repeat(6,1fr);flex:1;min-height:0}
+    .topbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 10px;border-bottom:1px solid var(--line)}
+    .title{font-size:32px;font-weight:700;line-height:1}
+    .nav-btn{font-size:32px;width:50px;height:50px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer}
+
+    .calendar{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:56px repeat(5,1fr);flex:1;min-height:0}
     .dow,.cell{border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
     .dow:nth-child(7),.cell:nth-child(7n){border-right:none}
-    .dow{display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;background:#fafafa;color:#333}
+    .dow{display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;letter-spacing:.2px;background:#fafafa;color:#333}
 
-    .cell{position:relative;padding:8px 6px;min-height:0;overflow:hidden}
-    .date{font-size:20px;font-weight:600;text-align:center;display:block;margin-bottom:4px}
-    .other .date{color:#aaa}
-    .today .date{background:var(--today);color:#fff;width:32px;height:32px;line-height:32px;border-radius:50%;margin:0 auto}
+    .cell{position:relative;padding:10px 10px 8px;min-height:0;overflow:hidden}
+    .date{font-size:22px;font-weight:600;line-height:1;color:var(--text);text-align:center;width:100%;display:block}
+    .other .date{color:#9a9a9a}
+    .today .date-badge{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;padding:0 8px;border-radius:999px;background:var(--today);color:#fff;margin:0 auto}
 
-    .events{margin-top:4px;display:flex;flex-direction:column;gap:3px}
-    .event{background:var(--event);border:1px solid #ddd;border-radius:6px;padding:5px 7px;font-size:15px;line-height:1.2}
-
-    #status {padding:12px 20px; background:#fff3cd; color:#856404; font-size:15px; border-bottom:1px solid #ffeaa7; text-align:center; min-height:60px;}
+    .events{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+    .event{background:var(--event);border:1px solid #cfcfcf;border-radius:8px;padding:6px 8px;line-height:1.15;overflow:hidden}
+    .event-line{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+    .event-time,.event-title{font-size:18px;font-weight:700;line-height:1;white-space:nowrap}
   </style>
 </head>
 <body>
   <header class="topbar">
     <button class="nav-btn" id="prev">‹</button>
-    <div class="title" id="monthTitle">E1003 月曆</div>
+    <div class="title" id="monthTitle">July 2026</div>
     <button class="nav-btn" id="next">›</button>
   </header>
 
-  <div id="status">正在初始化...</div>
-  <main class="calendar" id="calendar"></main>
+  <main class="calendar" id="calendar" aria-label="Calendar"></main>
 
   <script>
     const CALENDAR_ID = 'dcyt122024@gmail.com';
-    const API_KEY = 'AIzaSyAYBpOB6UoMYeAAmwTM_1KdYEzwtv6zXiE';   // ← 確認已貼上
+    const API_KEY = 'AIzaSyAYBpOB6UoMYeAAmwTM_1KdYEzwtv6zXiE';   // ← 改成你的真實 API Key
 
-    let currentDate = new Date(2026, 6, 1);
+    let currentDate = new Date(2026, 6, 1); // 預設 2026 年 7 月
 
-    function updateStatus(msg) {
-      document.getElementById('status').textContent = msg;
-    }
+    const fmtTime = d => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 
     function generateCalendar() {
       const year = currentDate.getFullYear();
@@ -57,12 +54,13 @@
 
       const firstDay = new Date(year, month, 1).getDay();
       const daysInMonth = new Date(year, month + 1, 0).getDate();
-      const daysInPrevMonth = new Date(year, month, 0).getDate();
+      const prevMonthDays = new Date(year, month, 0).getDate();
 
       const calendar = document.getElementById('calendar');
       calendar.innerHTML = '';
 
-      const days = ['日','一','二','三','四','五','六'];
+      // 星期標題
+      const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
       days.forEach(d => {
         const div = document.createElement('div');
         div.className = 'dow';
@@ -70,25 +68,28 @@
         calendar.appendChild(div);
       });
 
+      // 上個月
       for (let i = firstDay - 1; i >= 0; i--) {
         const cell = document.createElement('section');
         cell.className = 'cell other';
-        cell.innerHTML = `<div class="date">${daysInPrevMonth - i}</div>`;
+        cell.innerHTML = `<div class="date">${prevMonthDays - i}</div>`;
         calendar.appendChild(cell);
       }
 
+      // 本月
       for (let day = 1; day <= daysInMonth; day++) {
         const cell = document.createElement('section');
         cell.className = 'cell';
-        if (new Date().getDate() === day && new Date().getMonth() === month && new Date().getFullYear() === year) {
-          cell.classList.add('today');
-        }
-        cell.innerHTML = `<div class="date">${day}</div>`;
+        const isToday = (new Date().getFullYear() === year && new Date().getMonth() === month && new Date().getDate() === day);
+        cell.innerHTML = isToday 
+          ? `<div class="date"><span class="date-badge">${day}</span></div>` 
+          : `<div class="date">${day}</div>`;
         calendar.appendChild(cell);
       }
 
-      const remaining = 42 - (firstDay + daysInMonth);
-      for (let day = 1; day <= remaining; day++) {
+      // 下個月
+      const total = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+      for (let day = 1; day <= total - firstDay - daysInMonth; day++) {
         const cell = document.createElement('section');
         cell.className = 'cell other';
         cell.innerHTML = `<div class="date">${day}</div>`;
@@ -97,67 +98,86 @@
     }
 
     async function loadEvents() {
-      updateStatus('正在呼叫 Google Calendar API... (最多等 8 秒)');
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      const timeMin = new Date(year, month, 1).toISOString();
+      const timeMax = new Date(year, month + 1, 1).toISOString();
 
-      const timeoutId = setTimeout(() => {
-        updateStatus('❌ 連線超時 - E1003 可能無法連 Google 或瀏覽器限制');
-      }, 8000);
+      const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events`);
+      url.searchParams.set('key', API_KEY);
+      url.searchParams.set('timeMin', timeMin);
+      url.searchParams.set('timeMax', timeMax);
+      url.searchParams.set('singleEvents', 'true');
+      url.searchParams.set('orderBy', 'startTime');
+      url.searchParams.set('maxResults', '250');
 
       try {
-        const year = currentDate.getFullYear();
-        const month = currentDate.getMonth();
-        const timeMin = new Date(year, month, 1).toISOString();
-        const timeMax = new Date(year, month + 1, 1).toISOString();
-
-        const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?key=${API_KEY}&timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&maxResults=250`;
-
-        const res = await fetch(url);
-        clearTimeout(timeoutId);
-
-        updateStatus(`伺服器回應: ${res.status}`);
-
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
+        const res = await fetch(url.toString());
+        if (!res.ok) throw new Error('API error');
         const data = await res.json();
-        updateStatus(`✅ 成功！共 ${data.items ? data.items.length : 0} 筆活動`);
 
-        // 渲染事件（略）
         const grouped = new Map();
         (data.items || []).forEach(ev => {
-          const dayKey = (ev.start.dateTime || ev.start.date).slice(0,10);
-          if (!grouped.has(dayKey)) grouped.set(dayKey, []);
-          grouped.get(dayKey).push(ev);
+          const start = ev.start.dateTime || ev.start.date;
+          const day = start.slice(0, 10);
+          if (!grouped.has(day)) grouped.set(day, []);
+          grouped.get(day).push(ev);
         });
 
-        grouped.forEach((events, dayKey) => {
-          const dayNum = parseInt(dayKey.slice(8));
+        // 清空舊事件並填入新事件
+        document.querySelectorAll('.cell').forEach(cell => {
+          const eventsDiv = cell.querySelector('.events');
+          if (eventsDiv) eventsDiv.remove();
+        });
+
+        grouped.forEach((items, dayKey) => {
+          const day = parseInt(dayKey.slice(8));
           const cell = Array.from(document.querySelectorAll('.cell:not(.other)')).find(c => 
-            parseInt(c.querySelector('.date').textContent) === dayNum
+            parseInt(c.querySelector('.date').textContent) === day
           );
-          if (cell) {
-            let container = cell.querySelector('.events') || document.createElement('div');
+          if (!cell) return;
+
+          let container = cell.querySelector('.events');
+          if (!container) {
+            container = document.createElement('div');
             container.className = 'events';
             cell.appendChild(container);
-            container.innerHTML = events.slice(0,2).map(ev => {
-              const t = ev.start.dateTime ? new Date(ev.start.dateTime).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}) : '全天';
-              return `<div class="event"><span class="event-time">${t}</span> ${ev.summary || ''}</div>`;
-            }).join('');
           }
-        });
+          container.innerHTML = '';
 
-      } catch (err) {
-        clearTimeout(timeoutId);
-        updateStatus(`❌ ${err.message}`);
+          items.slice(0, 3).forEach(ev => {
+            const start = ev.start.dateTime || ev.start.date;
+            const end = ev.end.dateTime || ev.end.date;
+            const t1 = ev.start.dateTime ? fmtTime(new Date(start)) : 'All day';
+            const t2 = ev.start.dateTime ? fmtTime(new Date(end)) : '';
+            
+            const article = document.createElement('article');
+            article.className = 'event';
+            article.innerHTML = `<div class="event-line"><span class="event-time">${t1}${t2 ? '-' + t2 : ''}</span><span class="event-title">${ev.summary || '(No title)'}</span></div>`;
+            container.appendChild(article);
+          });
+        });
+      } catch (e) {
+        console.error(e);
       }
     }
 
-    window.onload = () => {
+    // 初始化
+    generateCalendar();
+    loadEvents();
+
+    // 切換月份
+    document.getElementById('prev').addEventListener('click', () => {
+      currentDate.setMonth(currentDate.getMonth() - 1);
       generateCalendar();
       loadEvents();
+    });
 
-      document.getElementById('prev').onclick = () => { currentDate.setMonth(currentDate.getMonth()-1); generateCalendar(); loadEvents(); };
-      document.getElementById('next').onclick = () => { currentDate.setMonth(currentDate.getMonth()+1); generateCalendar(); loadEvents(); };
-    };
+    document.getElementById('next').addEventListener('click', () => {
+      currentDate.setMonth(currentDate.getMonth() + 1);
+      generateCalendar();
+      loadEvents();
+    });
   </script>
 </body>
 </html>
