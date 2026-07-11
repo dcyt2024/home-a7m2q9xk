@@ -43,11 +43,13 @@
     const CALENDAR_ID = 'dcyt122024@gmail.com';
     const API_KEY = 'AIzaSyAYBpOB6UoMYeAAmwTM_1KdYEzwtv6zXiE';   // ← 改成你的真實 API Key
 
-    let currentDate = new Date(2026, 6, 1); // 預設 2026 年 7 月
+    let currentDate = new Date(2026, 6, 1);
 
+    const cellMap = new Map();
     const fmtTime = d => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 
     function generateCalendar() {
+      cellMap.clear();
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
       document.getElementById('monthTitle').textContent = `${year} 年 ${month + 1} 月`;
@@ -76,15 +78,20 @@
         calendar.appendChild(cell);
       }
 
-      // 本月
+      // 本月 + 建立 cellMap
       for (let day = 1; day <= daysInMonth; day++) {
         const cell = document.createElement('section');
         cell.className = 'cell';
+        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        cell.dataset.date = dateStr;
+
         const isToday = (new Date().getFullYear() === year && new Date().getMonth() === month && new Date().getDate() === day);
         cell.innerHTML = isToday 
           ? `<div class="date"><span class="date-badge">${day}</span></div>` 
           : `<div class="date">${day}</div>`;
+
         calendar.appendChild(cell);
+        cellMap.set(dateStr, cell);
       }
 
       // 下個月
@@ -113,7 +120,7 @@
 
       try {
         const res = await fetch(url.toString());
-        if (!res.ok) throw new Error('API error');
+        if (!res.ok) throw new Error('Google Calendar API error');
         const data = await res.json();
 
         const grouped = new Map();
@@ -124,18 +131,12 @@
           grouped.get(day).push(ev);
         });
 
-        // 清空舊事件並填入新事件
-        document.querySelectorAll('.cell').forEach(cell => {
-          const eventsDiv = cell.querySelector('.events');
-          if (eventsDiv) eventsDiv.remove();
-        });
+        // 清空舊事件
+        document.querySelectorAll('.events').forEach(el => el.remove());
 
-        grouped.forEach((items, dayKey) => {
-          const day = parseInt(dayKey.slice(8));
-          const cell = Array.from(document.querySelectorAll('.cell:not(.other)')).find(c => 
-            parseInt(c.querySelector('.date').textContent) === day
-          );
-          if (!cell) return;
+        for (const [day, items] of grouped.entries()) {
+          const cell = cellMap.get(day) || document.querySelector(`.cell[data-date="${day}"]`);
+          if (!cell) continue;
 
           let container = cell.querySelector('.events');
           if (!container) {
@@ -156,7 +157,7 @@
             article.innerHTML = `<div class="event-line"><span class="event-time">${t1}${t2 ? '-' + t2 : ''}</span><span class="event-title">${ev.summary || '(No title)'}</span></div>`;
             container.appendChild(article);
           });
-        });
+        }
       } catch (e) {
         console.error(e);
       }
