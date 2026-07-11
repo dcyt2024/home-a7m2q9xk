@@ -41,27 +41,25 @@
 
   <script>
     const CALENDAR_ID = 'dcyt122024@gmail.com';
-    const API_KEY = 'AIzaSyAYBpOB6UoMYeAAmwTM_1KdYEzwtv6zXiE';   // ← 改成你的真實 API Key
+    const API_KEY = 'AIzaSyAYBpOB6UoMYeAAmwTM_1KdYEzwtv6zXiE';   // ← 改成你的真實 Key
 
-    let currentDate = new Date(2026, 6, 1);
+    let currentYear = 2026;
+    let currentMonth = 6; // 7月 (0-based)
 
-    const cellMap = new Map();
     const fmtTime = d => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 
     function generateCalendar() {
-      cellMap.clear();
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth();
-      document.getElementById('monthTitle').textContent = `${year} 年 ${month + 1} 月`;
+      const firstGridDate = new Date(currentYear, currentMonth, 1);
+      const firstDay = firstGridDate.getDay();
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const prevMonthDays = new Date(currentYear, currentMonth, 0).getDate();
 
-      const firstDay = new Date(year, month, 1).getDay();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      const prevMonthDays = new Date(year, month, 0).getDate();
+      document.getElementById('monthTitle').textContent = `${currentYear} 年 ${currentMonth + 1} 月`;
 
       const calendar = document.getElementById('calendar');
       calendar.innerHTML = '';
 
-      // 星期標題
+      // 星期
       const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
       days.forEach(d => {
         const div = document.createElement('div');
@@ -78,25 +76,20 @@
         calendar.appendChild(cell);
       }
 
-      // 本月 + 建立 cellMap
+      // 本月
       for (let day = 1; day <= daysInMonth; day++) {
         const cell = document.createElement('section');
         cell.className = 'cell';
-        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-        cell.dataset.date = dateStr;
-
-        const isToday = (new Date().getFullYear() === year && new Date().getMonth() === month && new Date().getDate() === day);
+        const isToday = (new Date().getFullYear() === currentYear && new Date().getMonth() === currentMonth && new Date().getDate() === day);
         cell.innerHTML = isToday 
           ? `<div class="date"><span class="date-badge">${day}</span></div>` 
           : `<div class="date">${day}</div>`;
-
         calendar.appendChild(cell);
-        cellMap.set(dateStr, cell);
       }
 
       // 下個月
-      const total = Math.ceil((firstDay + daysInMonth) / 7) * 7;
-      for (let day = 1; day <= total - firstDay - daysInMonth; day++) {
+      const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+      for (let day = 1; day <= totalCells - firstDay - daysInMonth; day++) {
         const cell = document.createElement('section');
         cell.className = 'cell other';
         cell.innerHTML = `<div class="date">${day}</div>`;
@@ -105,10 +98,8 @@
     }
 
     async function loadEvents() {
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth();
-      const timeMin = new Date(year, month, 1).toISOString();
-      const timeMax = new Date(year, month + 1, 1).toISOString();
+      const timeMin = new Date(currentYear, currentMonth, 1).toISOString();
+      const timeMax = new Date(currentYear, currentMonth + 1, 1).toISOString();
 
       const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events`);
       url.searchParams.set('key', API_KEY);
@@ -120,7 +111,7 @@
 
       try {
         const res = await fetch(url.toString());
-        if (!res.ok) throw new Error('Google Calendar API error');
+        if (!res.ok) throw new Error('API error');
         const data = await res.json();
 
         const grouped = new Map();
@@ -134,30 +125,35 @@
         // 清空舊事件
         document.querySelectorAll('.events').forEach(el => el.remove());
 
-        for (const [day, items] of grouped.entries()) {
-          const cell = cellMap.get(day) || document.querySelector(`.cell[data-date="${day}"]`);
-          if (!cell) continue;
-
-          let container = cell.querySelector('.events');
-          if (!container) {
-            container = document.createElement('div');
-            container.className = 'events';
-            cell.appendChild(container);
-          }
-          container.innerHTML = '';
-
-          items.slice(0, 3).forEach(ev => {
-            const start = ev.start.dateTime || ev.start.date;
-            const end = ev.end.dateTime || ev.end.date;
-            const t1 = ev.start.dateTime ? fmtTime(new Date(start)) : 'All day';
-            const t2 = ev.start.dateTime ? fmtTime(new Date(end)) : '';
-            
-            const article = document.createElement('article');
-            article.className = 'event';
-            article.innerHTML = `<div class="event-line"><span class="event-time">${t1}${t2 ? '-' + t2 : ''}</span><span class="event-title">${ev.summary || '(No title)'}</span></div>`;
-            container.appendChild(article);
+        grouped.forEach((items, dayKey) => {
+          const day = parseInt(dayKey.slice(8));
+          const cells = document.querySelectorAll('.cell');
+          const cell = Array.from(cells).find(c => {
+            const d = c.querySelector('.date');
+            return d && !c.classList.contains('other') && parseInt(d.textContent) === day;
           });
-        }
+
+          if (cell) {
+            let container = cell.querySelector('.events');
+            if (!container) {
+              container = document.createElement('div');
+              container.className = 'events';
+              cell.appendChild(container);
+            }
+            container.innerHTML = '';
+
+            items.slice(0, 3).forEach(ev => {
+              const start = ev.start.dateTime || ev.start.date;
+              const end = ev.end.dateTime || ev.end.date;
+              const t1 = ev.start.dateTime ? fmtTime(new Date(start)) : 'All day';
+              const t2 = ev.start.dateTime ? fmtTime(new Date(end)) : '';
+              const article = document.createElement('article');
+              article.className = 'event';
+              article.innerHTML = `<div class="event-line"><span class="event-time">${t1}${t2 ? '-' + t2 : ''}</span><span class="event-title">${ev.summary || '(No title)'}</span></div>`;
+              container.appendChild(article);
+            });
+          }
+        });
       } catch (e) {
         console.error(e);
       }
@@ -167,15 +163,23 @@
     generateCalendar();
     loadEvents();
 
-    // 切換月份
+    // 切換
     document.getElementById('prev').addEventListener('click', () => {
-      currentDate.setMonth(currentDate.getMonth() - 1);
+      currentMonth--;
+      if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+      }
       generateCalendar();
       loadEvents();
     });
 
     document.getElementById('next').addEventListener('click', () => {
-      currentDate.setMonth(currentDate.getMonth() + 1);
+      currentMonth++;
+      if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+      }
       generateCalendar();
       loadEvents();
     });
