@@ -3,196 +3,41 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Dennis 月曆頁</title>
+  <title>Calendar</title>
   <style>
-    :root{
-      --bg:#f7f7f5;
-      --card:#ffffff;
-      --text:#222;
-      --muted:#666;
-      --line:#dcdcdc;
-      --accent:#111;
+    body {
+      margin: 0;
+      background: #f5f5f5;
+      font-family: Arial, sans-serif;
     }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Noto Sans TC",sans-serif;
-      background:var(--bg);
-      color:var(--text);
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px;
     }
-    .wrap{
-      max-width:1100px;
-      margin:0 auto;
-      padding:24px;
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
     }
-    h1{
-      margin:0 0 8px;
-      font-size:28px;
-    }
-    .sub{
-      color:var(--muted);
-      margin-bottom:20px;
-    }
-    .toolbar{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:12px;
-      margin-bottom:16px;
-      flex-wrap:wrap;
-    }
-    .btn{
-      border:1px solid var(--line);
-      background:var(--card);
-      padding:10px 14px;
-      border-radius:10px;
-      cursor:pointer;
-    }
-    .month{
-      font-size:22px;
-      font-weight:700;
-    }
-    .calendar{
-      display:grid;
-      grid-template-columns:repeat(7,1fr);
-      gap:8px;
-    }
-    .dow,.day{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:12px;
-    }
-    .dow{
-      padding:10px;
-      text-align:center;
-      font-weight:600;
-      color:var(--muted);
-    }
-    .day{
-      min-height:130px;
-      padding:10px;
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-    }
-    .day.muted{
-      opacity:.35;
-    }
-    .date{
-      font-size:14px;
-      font-weight:700;
-    }
-    .events{
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-    }
-    .event{
-      font-size:12px;
-      line-height:1.35;
-      padding:6px 8px;
-      border-radius:8px;
-      background:#efefef;
-    }
-    .today{
-      outline:2px solid var(--accent);
-    }
-    @media (max-width: 700px){
-      .calendar{gap:6px}
-      .day{min-height:90px;padding:8px}
-      .event{font-size:11px}
+    iframe {
+      display: block;
+      width: 100%;
+      height: 90vh;
+      border: 0;
     }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>月曆示範頁</h1>
-    <div class="sub">這是可直接部署到 GitHub Pages 的靜態頁面版本。</div>
-
-    <div class="toolbar">
-      <button class="btn" onclick="changeMonth(-1)">上月</button>
-      <div class="month" id="monthLabel"></div>
-      <button class="btn" onclick="changeMonth(1)">下月</button>
+    <div class="card">
+      <iframe
+        src="https://calendar.google.com/calendar/embed?src=dcyt122024%40gmail.com&ctz=Asia%2FHong_Kong&mode=MONTH"
+        frameborder="0"
+        scrolling="no">
+      </iframe>
     </div>
-
-    <div class="calendar" id="calendar"></div>
   </div>
-
-  <script>
-    const calendarEl = document.getElementById('calendar');
-    const monthLabel = document.getElementById('monthLabel');
-    const today = new Date();
-    let viewDate = new Date(today.getFullYear(), today.getMonth(), 1);
-
-    const demoEvents = {
-      "2026-07-12": ["0900 Gym", "1500 買餸"],
-      "2026-07-15": ["1030 Doctor", "1900 Dinner"],
-      "2026-07-18": ["All day Family day"],
-      "2026-07-21": ["1400 Meeting", "2000 Game time"],
-      "2026-07-25": ["1200 Lunch", "1600 Aquarium maintenance"]
-    };
-
-    function fmtDate(d){
-      const y = d.getFullYear();
-      const m = String(d.getMonth()+1).padStart(2,'0');
-      const day = String(d.getDate()).padStart(2,'0');
-      return `${y}-${m}-${day}`;
-    }
-
-    function renderCalendar(){
-      calendarEl.innerHTML = "";
-      const dows = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-      dows.forEach(d => {
-        const el = document.createElement("div");
-        el.className = "dow";
-        el.textContent = d;
-        calendarEl.appendChild(el);
-      });
-
-      const year = viewDate.getFullYear();
-      const month = viewDate.getMonth();
-      monthLabel.textContent = `${year}年 ${month+1}月`;
-
-      const firstDay = new Date(year, month, 1);
-      const startDay = firstDay.getDay();
-      const startDate = new Date(year, month, 1 - startDay);
-
-      for(let i=0;i<42;i++){
-        const d = new Date(startDate);
-        d.setDate(startDate.getDate() + i);
-
-        const cell = document.createElement("div");
-        cell.className = "day";
-        if(d.getMonth() !== month) cell.classList.add("muted");
-        if(fmtDate(d) === fmtDate(today)) cell.classList.add("today");
-
-        const dateEl = document.createElement("div");
-        dateEl.className = "date";
-        dateEl.textContent = d.getDate();
-        cell.appendChild(dateEl);
-
-        const eventsEl = document.createElement("div");
-        eventsEl.className = "events";
-
-        const key = fmtDate(d);
-        (demoEvents[key] || []).slice(0,3).forEach(ev => {
-          const evEl = document.createElement("div");
-          evEl.className = "event";
-          evEl.textContent = ev;
-          eventsEl.appendChild(evEl);
-        });
-
-        cell.appendChild(eventsEl);
-        calendarEl.appendChild(cell);
-      }
-    }
-
-    function changeMonth(offset){
-      viewDate.setMonth(viewDate.getMonth() + offset);
-      renderCalendar();
-    }
-
-    renderCalendar();
-  </script>
 </body>
 </html>
