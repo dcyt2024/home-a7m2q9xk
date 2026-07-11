@@ -23,28 +23,17 @@
     .event{background:var(--event);border:1px solid #cfcfcf;border-radius:8px;padding:8px 10px;line-height:1.15;overflow:hidden}
     .event-line{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
     .event-time,.event-title{font-size:27px;font-weight:700;line-height:1;white-space:nowrap}
-    .controls{display:flex;gap:8px;justify-content:center;align-items:center;padding:8px 0 12px;border-top:1px solid var(--line);background:#fff}
-    .controls button{font-size:18px;font-weight:700;padding:8px 14px;border:1px solid #cfcfcf;border-radius:8px;background:#f8f8f8;color:#111}
-    .controls button:active{transform:scale(.98)}
   </style>
 </head>
 <body>
   <header class="topbar"><div class="title" id="monthTitle">July 2026</div></header>
   <main class="calendar" id="calendar" aria-label="Monthly calendar"></main>
-  <div class="controls">
-    <button id="prevBtn">Prev</button>
-    <button id="todayBtn">Today</button>
-    <button id="nextBtn">Next</button>
-  </div>
 
   <script>
     const CALENDAR_ID = 'dcyt122024@gmail.com';
     const API_KEY = 'AIzaSyAUhbzcmS9bdGjTwxNmi3RP2MuuOK7U-Io';
     const monthTitle = document.getElementById('monthTitle');
     const calendar = document.getElementById('calendar');
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    const todayBtn = document.getElementById('todayBtn');
 
     const now = new Date();
     let viewDate = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -128,9 +117,10 @@
     }
 
     function refresh() { buildGrid(viewDate); loadEvents().catch(() => {}); }
-    prevBtn.onclick = () => { viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1); refresh(); };
-    nextBtn.onclick = () => { viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1); refresh(); };
-    todayBtn.onclick = () => { const n = new Date(); viewDate = new Date(n.getFullYear(), n.getMonth(), 1); refresh(); };
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') { viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1); refresh(); }
+      if (e.key === 'ArrowRight') { viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1); refresh(); }
+    });
     refresh();
   </script>
 </body>
