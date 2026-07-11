@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>E1003 Calendar</title>
+  <title>E1003 Calendar - July</title>
   <style>
     :root{--bg:#fff;--line:#d8d8d8;--text:#111;--event:#efefef;--today:#111}
     *{box-sizing:border-box}
@@ -12,10 +12,8 @@
     .topbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 10px;border-bottom:1px solid var(--line)}
     .title{font-size:32px;font-weight:700;line-height:1}
     
-    /* 純 HTML 月份切換選單連結 */
     .month-switcher{display:flex;gap:12px}
     .month-switcher a{font-size:16px;color:#0066cc;text-decoration:none;font-weight:bold;padding:6px 10px;border:1px solid #0066cc;border-radius:4px;background:#fff}
-    .month-switcher a:hover{background:#efefef}
     .month-switcher a.active{background:#0066cc;color:#fff}
 
     .calendar{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:56px repeat(5,1fr);flex:1;min-height:0}
@@ -29,7 +27,6 @@
     .events{margin-top:8px;display:flex;flex-direction:column;gap:4px}
     .event{background:var(--event);border:1px solid #cfcfcf;border-radius:8px;padding:6px 8px;line-height:1.15;overflow:hidden}
     
-    /* 修正：時間與標題並排 */
     .event-line{display:flex;gap:6px;align-items:baseline;flex-wrap:nowrap;overflow:hidden}
     .event-time,.event-title{font-size:14px;font-weight:700;line-height:1.1;white-space:nowrap}
     .event-title{text-overflow:ellipsis;overflow:hidden}
@@ -37,21 +34,17 @@
 </head>
 <body>
   <header class="topbar">
-    <!-- 月份標題會根據當前顯示自動更改 -->
-    <div class="title" id="currentMonthTitle">July 2026</div>
-    
-    <!-- 純 HTML 連結切換（完全不依賴複雜 JS 繪製，直接跳轉網址） -->
+    <div class="title">July 2026</div>
     <div class="month-switcher">
-      <a href="?month=2026-07" id="m202607">7月</a>
-      <a href="?month=2026-08" id="m202608">8月</a>
-      <a href="?month=2026-09" id="m202609">9月</a>
+      <a href="july.html" class="active">7月</a>
+      <a href="august.html">8月</a>
     </div>
   </header>
 
-  <main class="calendar" aria-label="Monthly calendar">
+  <main class="calendar">
     <div class="dow">Sun</div><div class="dow">Mon</div><div class="dow">Tue</div><div class="dow">Wed</div><div class="dow">Thu</div><div class="dow">Fri</div><div class="dow">Sat</div>
     
-    <!-- 以下完全保留您原本 100% 成功運作的 2026 年 7 月 42 個靜態格子結構 -->
+    <!-- 7月份靜態格子 -->
     <section class="cell other"><div class="date">28</div></section><section class="cell other"><div class="date">29</div></section><section class="cell other"><div class="date">30</div></section><section class="cell"><div class="date">1</div></section><section class="cell"><div class="date">2</div></section><section class="cell"><div class="date">3</div></section><section class="cell"><div class="date">4</div></section>
     <section class="cell"><div class="date">5</div></section><section class="cell"><div class="date">6</div></section><section class="cell"><div class="date">7</div></section><section class="cell"><div class="date">8</div></section><section class="cell"><div class="date">9</div></section><section class="cell"><div class="date">10</div></section><section class="cell today"><div class="date"><span class="date-badge">11</span></div></section>
     <section class="cell"><div class="date">12</div></section><section class="cell"><div class="date">13</div></section><section class="cell"><div class="date">14</div></section><section class="cell"><div class="date">15</div></section><section class="cell"><div class="date">16</div></section><section class="cell"><div class="date">17</div></section><section class="cell"><div class="date">18</div></section>
@@ -63,33 +56,8 @@
     const CALENDAR_ID = 'dcyt122024@gmail.com';
     const API_KEY = 'AIzaSyAUhbzcmS9bdGjTwxNmi3RP2MuuOK7U-Io';
 
-    // 1. 解析網址參數（例如 ?month=2026-08）
-    const urlParams = new URLSearchParams(window.location.search);
-    const monthParam = urlParams.get('month'); // 會得到 "2026-08" 這樣的字串
-
-    // 預設為 2026 年 7 月（配合您寫死的 HTML 結構）
-    let currentYear = 2026;
-    let currentMonth = 6; // 0 代表 1 月，6 代表 7 月
-    let titleString = 'July 2026';
-
-    // 如果網址有帶參數，就切換對應的時間給 Google API 讀取
-    if (monthParam === '2026-08') {
-      currentYear = 2026; currentMonth = 7; titleString = 'August 2026';
-      document.getElementById('m202608').className = 'active';
-    } else if (monthParam === '2026-09') {
-      currentYear = 2026; currentMonth = 8; titleString = 'September 2026';
-      document.getElementById('m202609').className = 'active';
-    } else {
-      // 預設 7 月
-      document.getElementById('m202607').className = 'active';
-    }
-    
-    // 更新頂部顯示的月份文字
-    document.getElementById('currentMonthTitle').textContent = titleString;
-
-    // 2. 完全保留您原本的 Map 對照表與日期邏輯
     const cellMap = new Map();
-    const firstGridDate = new Date(2026, 5, 28); // 依然以 6/28 為網格起點
+    const firstGridDate = new Date(2026, 5, 28);
     
     [...document.querySelectorAll('.cell')].forEach((cell, i) => {
       const dt = new Date(firstGridDate);
@@ -101,20 +69,10 @@
     const fmtTime = d => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 
     async function loadEvents() {
-      // 根據網址切換後的月份，動態帶入 Google API 的查詢區間
-      const timeMin = new Date(currentYear, currentMonth, 1).toISOString();
-      const timeMax = new Date(currentYear, currentMonth + 1, 1).toISOString();
-      
-      const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events`);
-      url.searchParams.set('key', API_KEY);
-      url.searchParams.set('timeMin', timeMin);
-      url.searchParams.set('timeMax', timeMax);
-      url.searchParams.set('singleEvents', 'true');
-      url.searchParams.set('orderBy', 'startTime');
-      url.searchParams.set('maxResults', '250');
+      // 7月份的時間區間直接寫死
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?key=${API_KEY}&timeMin=2026-07-01T00:00:00Z&timeMax=2026-08-01T00:00:00Z&singleEvents=true&orderBy=startTime&maxResults=250`;
 
-      const res = await fetch(url.toString());
-      if (!res.ok) throw new Error('Google Calendar API error');
+      const res = await fetch(url);
       const data = await res.json();
       const grouped = new Map();
 
@@ -128,12 +86,9 @@
       for (const [day, items] of grouped.entries()) {
         const cell = cellMap.get(day);
         if (!cell) continue;
-        let container = cell.querySelector('.events');
-        if (!container) {
-          container = document.createElement('div');
-          container.className = 'events';
-          cell.appendChild(container);
-        }
+        let container = cell.querySelector('.events') || document.createElement('div');
+        container.className = 'events';
+        cell.appendChild(container);
         container.innerHTML = '';
         items.slice(0, 3).forEach(ev => {
           const start = ev.start.dateTime || ev.start.date;
@@ -142,14 +97,11 @@
           const t2 = ev.start.dateTime ? fmtTime(new Date(end)) : '';
           const article = document.createElement('article');
           article.className = 'event';
-          
-          // 修正：時間與標題並排，且大小統一調整為 14px 舒適大小
           article.innerHTML = `<div class="event-line"><span class="event-time">${t1}${t2 ? '-' + t2 : ''}</span><span class="event-title">${ev.summary || '(No title)'}</span></div>`;
           container.appendChild(article);
         });
       }
     }
-
     loadEvents().catch(() => {});
   </script>
 </body>
