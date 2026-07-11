@@ -27,7 +27,7 @@
     .events{margin-top:4px;display:flex;flex-direction:column;gap:3px}
     .event{background:var(--event);border:1px solid #ddd;border-radius:6px;padding:5px 7px;font-size:15px;line-height:1.2}
 
-    #status {padding:12px 20px; background:#fff3cd; color:#856404; font-size:15px; border-bottom:1px solid #ffeaa7; text-align:center; min-height:52px;}
+    #status {padding:12px 20px; background:#fff3cd; color:#856404; font-size:15px; border-bottom:1px solid #ffeaa7; text-align:center; min-height:60px;}
   </style>
 </head>
 <body>
@@ -42,7 +42,7 @@
 
   <script>
     const CALENDAR_ID = 'dcyt122024@gmail.com';
-    const API_KEY = 'AIzaSyAYBpOB6UoMYeAAmwTM_1KdYEzwtv6zXiE';   // ← 貼你的真實 Key
+    const API_KEY = 'AIzaSyAYBpOB6UoMYeAAmwTM_1KdYEzwtv6zXiE';   // ← 確認已貼上
 
     let currentDate = new Date(2026, 6, 1);
 
@@ -70,7 +70,6 @@
         calendar.appendChild(div);
       });
 
-      // 上個月
       for (let i = firstDay - 1; i >= 0; i--) {
         const cell = document.createElement('section');
         cell.className = 'cell other';
@@ -78,19 +77,18 @@
         calendar.appendChild(cell);
       }
 
-      // 本月
       for (let day = 1; day <= daysInMonth; day++) {
         const cell = document.createElement('section');
         cell.className = 'cell';
-        const isToday = (new Date().getFullYear() === year && new Date().getMonth() === month && new Date().getDate() === day);
-        if (isToday) cell.classList.add('today');
+        if (new Date().getDate() === day && new Date().getMonth() === month && new Date().getFullYear() === year) {
+          cell.classList.add('today');
+        }
         cell.innerHTML = `<div class="date">${day}</div>`;
         calendar.appendChild(cell);
       }
 
-      // 下個月
-      const total = Math.ceil((firstDay + daysInMonth)/7) * 7;
-      for (let day = 1; day <= total - firstDay - daysInMonth; day++) {
+      const remaining = 42 - (firstDay + daysInMonth);
+      for (let day = 1; day <= remaining; day++) {
         const cell = document.createElement('section');
         cell.className = 'cell other';
         cell.innerHTML = `<div class="date">${day}</div>`;
@@ -99,7 +97,11 @@
     }
 
     async function loadEvents() {
-      updateStatus('正在從 Google 載入事件...');
+      updateStatus('正在呼叫 Google Calendar API... (最多等 8 秒)');
+
+      const timeoutId = setTimeout(() => {
+        updateStatus('❌ 連線超時 - E1003 可能無法連 Google 或瀏覽器限制');
+      }, 8000);
 
       try {
         const year = currentDate.getFullYear();
@@ -110,48 +112,42 @@
         const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?key=${API_KEY}&timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&maxResults=250`;
 
         const res = await fetch(url);
+        clearTimeout(timeoutId);
+
+        updateStatus(`伺服器回應: ${res.status}`);
+
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const data = await res.json();
-        updateStatus(`✅ 成功載入 ${data.items ? data.items.length : 0} 筆活動`);
+        updateStatus(`✅ 成功！共 ${data.items ? data.items.length : 0} 筆活動`);
 
+        // 渲染事件（略）
         const grouped = new Map();
         (data.items || []).forEach(ev => {
-          const start = ev.start.dateTime || ev.start.date;
-          const dayKey = start.slice(0, 10);
+          const dayKey = (ev.start.dateTime || ev.start.date).slice(0,10);
           if (!grouped.has(dayKey)) grouped.set(dayKey, []);
           grouped.get(dayKey).push(ev);
         });
 
         grouped.forEach((events, dayKey) => {
-          const dayNum = parseInt(dayKey.slice(8,10));
-          const cells = document.querySelectorAll('.cell:not(.other)');
-          const cell = Array.from(cells).find(c => parseInt(c.querySelector('.date').textContent) === dayNum);
-          if (!cell) return;
-
-          let container = cell.querySelector('.events');
-          if (!container) {
-            container = document.createElement('div');
+          const dayNum = parseInt(dayKey.slice(8));
+          const cell = Array.from(document.querySelectorAll('.cell:not(.other)')).find(c => 
+            parseInt(c.querySelector('.date').textContent) === dayNum
+          );
+          if (cell) {
+            let container = cell.querySelector('.events') || document.createElement('div');
             container.className = 'events';
             cell.appendChild(container);
+            container.innerHTML = events.slice(0,2).map(ev => {
+              const t = ev.start.dateTime ? new Date(ev.start.dateTime).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}) : '全天';
+              return `<div class="event"><span class="event-time">${t}</span> ${ev.summary || ''}</div>`;
+            }).join('');
           }
-          container.innerHTML = '';
-
-          events.slice(0, 3).forEach(ev => {
-            const startTime = ev.start.dateTime ? new Date(ev.start.dateTime) : null;
-            const timeStr = startTime ? 
-              `${startTime.getHours().toString().padStart(2,'0')}:${startTime.getMinutes().toString().padStart(2,'0')}` : '全天';
-
-            const article = document.createElement('article');
-            article.className = 'event';
-            article.innerHTML = `<span class="event-time">${timeStr}</span> ${ev.summary || '(無標題)'}`;
-            container.appendChild(article);
-          });
         });
 
       } catch (err) {
-        console.error(err);
-        updateStatus(`❌ 錯誤: ${err.message}`);
+        clearTimeout(timeoutId);
+        updateStatus(`❌ ${err.message}`);
       }
     }
 
