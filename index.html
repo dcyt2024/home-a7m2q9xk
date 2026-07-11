@@ -19,7 +19,7 @@
     .dow{display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;letter-spacing:.2px;background:#fafafa;color:#333}
     .cell{position:relative;padding:8px 10px 8px;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:6px}
     
-    /* 修正：保留 cell 容器與邊框線，只隱藏內部的所有元件 */
+    /* 保留 cell 容器與邊框線，只隱藏內部的所有元件 */
     .other.hidden-month * { display: none; }
     
     .date{font-size:22px;font-weight:600;line-height:1;color:var(--text);text-align:center;width:100%;display:block;flex:0 0 auto}
@@ -60,6 +60,7 @@
     const startOfMonth = d => new Date(d.getFullYear(), d.getMonth(), 1);
     const isToday = d => { const t = new Date(); return d.getFullYear()===t.getFullYear() && d.getMonth()===t.getMonth() && d.getDate()===t.getDate(); };
     function setDebug(msg){ debug.textContent = msg; }
+    
     function buildGrid(monthDate) {
       monthTitle.textContent = monthLabel(monthDate);
       calendar.innerHTML = '';
@@ -82,36 +83,56 @@
         calendar.appendChild(cell);
       }
     }
+    
     async function loadEvents() {
-      const url = `${SCRIPT_URL}?year=${encodeURIComponent(viewDate.getFullYear())}&month=${encodeURIComponent(viewDate.getMonth()+1)}`;
-      const res = await fetch(url, { cache: 'no-store' });
-      const txt = await res.text();
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${txt.slice(0,120)}`);
-      const data = JSON.parse(txt);
-      const grouped = new Map();
-      (data.events || []).forEach(ev => {
-        const day = (ev.start || '').slice(0, 10);
-        if (!grouped.has(day)) grouped.set(day, []);
-        grouped.get(day).push(ev);
-      });
-      [...calendar.querySelectorAll('.cell')].forEach(cell => {
-        const day = cell.dataset.date;
-        const list = grouped.get(day) || [];
-        const container = cell.querySelector('.events');
-        container.innerHTML = '';
-        list.slice(0, 3).forEach(ev => {
-          const start = ev.start ? new Date(ev.start) : null;
-          const end = ev.end ? new Date(ev.end) : null;
-          const fmt = d => d ? `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` : '';
-          const timeText = ev.allDay ? 'All day' : (start && end ? `${fmt(start)} - ${fmt(end)}` : '');
-          const article = document.createElement('article');
-          article.className = 'event';
-          article.innerHTML = `<div class="event-time">${timeText}</div><div class="event-title">${ev.title || '(No title)'}</div>`;
-          container.appendChild(article);
+      // 修正：移除 cache: 'no-store'，改用傳統加 _t=時間戳記 參數的方式來強制重新抓取資料，避免舊型瀏覽器不支援拋出錯誤
+      const url = `${SCRIPT_URL}?year=${encodeURIComponent(viewDate.getFullYear())}&month=${encodeURIComponent(viewDate.getMonth()+1)}&_t=${new Date().getTime()}`;
+      
+      try {
+        const res = await fetch(url);
+        const txt = await res.text();
+        if (!res.ok) throw new Error(`HTTP ${res.status}: ${txt.slice(0,120)}`);
+        
+        const data = JSON.parse(txt);
+        const grouped = new Map();
+        const eventsList = data.events || [];
+        
+        eventsList.forEach(ev => {
+          const day = (ev.start || '').slice(0, 10);
+          if (!grouped.has(day)) grouped.set(day, []);
+          grouped.get(day).push(ev);
         });
-      });
+        
+        // 修正：將 Array spread [...cells] 改為傳統 Array.prototype.slice 確保舊核心相容
+        const cells = Array.prototype.slice.call(calendar.querySelectorAll('.cell'));
+        cells.forEach(cell => {
+          const day = cell.dataset.date;
+          const list = grouped.get(day) || [];
+          const container = cell.querySelector('.events');
+          container.innerHTML = '';
+          
+          list.slice(0, 3).forEach(ev => {
+            const start = ev.start ? new Date(ev.start) : null;
+            const end = ev.end ? new Date(ev.end) : null;
+            const fmt = d => d ? `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` : '';
+            const timeText = ev.allDay ? 'All day' : (start && end ? `${fmt(start)} - ${fmt(end)}` : '');
+            
+            const article = document.createElement('article');
+            article.className = 'event';
+            
+            const titleText = ev.title ? ev.title : '(No title)';
+            article.innerHTML = `<div class="event-time">${timeText}</div><div class="event-title">${titleText}</div>`;
+            container.appendChild(article);
+          });
+        });
+        setDebug('Loaded ' + monthLabel(viewDate));
+      } catch (e) {
+        setDebug('Load failed: ' + e.message);
+      }
     }
-    async function refresh(){ buildGrid(viewDate); try { await loadEvents(); setDebug('Loaded ' + monthLabel(viewDate)); } catch (e) { setDebug('Load failed: ' + e.message); } }
+    
+    async function refresh(){ buildGrid(viewDate); await loadEvents(); }
+    
     prevBtn.addEventListener('click', () => { viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1); refresh(); });
     nextBtn.addEventListener('click', () => { viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1); refresh(); });
     window.addEventListener('keydown', (e) => { if (e.key === 'ArrowLeft') prevBtn.click(); if (e.key === 'ArrowRight') nextBtn.click(); });
