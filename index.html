@@ -41,25 +41,18 @@
 
   <script>
     const CALENDAR_ID = 'dcyt122024@gmail.com';
-    const API_KEY = 'AIzaSyAYBpOB6UoMYeAAmwTM_1KdYEzwtv6zXiE';   // ← 改成你的真實 Key
+    const API_KEY = 'AIzaSyAYBpOB6UoMYeAAmwTM_1KdYEzwtv6zXiE';  // ← 改成你的真實 API Key
 
     let currentYear = 2026;
-    let currentMonth = 6; // 7月 (0-based)
+    let currentMonth = 6;  // 7月
 
     const fmtTime = d => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 
-    function generateCalendar() {
-      const firstGridDate = new Date(currentYear, currentMonth, 1);
-      const firstDay = firstGridDate.getDay();
-      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-      const prevMonthDays = new Date(currentYear, currentMonth, 0).getDate();
-
-      document.getElementById('monthTitle').textContent = `${currentYear} 年 ${currentMonth + 1} 月`;
-
+    function createCalendarGrid() {
       const calendar = document.getElementById('calendar');
       calendar.innerHTML = '';
 
-      // 星期
+      // 星期標題
       const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
       days.forEach(d => {
         const div = document.createElement('div');
@@ -67,6 +60,10 @@
         div.textContent = d;
         calendar.appendChild(div);
       });
+
+      const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const prevMonthDays = new Date(currentYear, currentMonth, 0).getDate();
 
       // 上個月
       for (let i = firstDay - 1; i >= 0; i--) {
@@ -88,13 +85,15 @@
       }
 
       // 下個月
-      const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
-      for (let day = 1; day <= totalCells - firstDay - daysInMonth; day++) {
+      const remaining = 42 - (firstDay + daysInMonth);
+      for (let day = 1; day <= remaining; day++) {
         const cell = document.createElement('section');
         cell.className = 'cell other';
         cell.innerHTML = `<div class="date">${day}</div>`;
         calendar.appendChild(cell);
       }
+
+      document.getElementById('monthTitle').textContent = `${currentYear} 年 ${currentMonth + 1} 月`;
     }
 
     async function loadEvents() {
@@ -111,7 +110,7 @@
 
       try {
         const res = await fetch(url.toString());
-        if (!res.ok) throw new Error('API error');
+        if (!res.ok) throw new Error('Google Calendar API error');
         const data = await res.json();
 
         const grouped = new Map();
@@ -125,12 +124,11 @@
         // 清空舊事件
         document.querySelectorAll('.events').forEach(el => el.remove());
 
-        grouped.forEach((items, dayKey) => {
-          const day = parseInt(dayKey.slice(8));
-          const cells = document.querySelectorAll('.cell');
-          const cell = Array.from(cells).find(c => {
-            const d = c.querySelector('.date');
-            return d && !c.classList.contains('other') && parseInt(d.textContent) === day;
+        for (const [day, items] of grouped.entries()) {
+          const dayNum = parseInt(day.slice(8));
+          const cell = Array.from(document.querySelectorAll('.cell')).find(c => {
+            const dateEl = c.querySelector('.date');
+            return dateEl && parseInt(dateEl.textContent) === dayNum && !c.classList.contains('other');
           });
 
           if (cell) {
@@ -153,24 +151,24 @@
               container.appendChild(article);
             });
           }
-        });
+        }
       } catch (e) {
         console.error(e);
       }
     }
 
     // 初始化
-    generateCalendar();
+    createCalendarGrid();
     loadEvents();
 
-    // 切換
+    // 切換月份
     document.getElementById('prev').addEventListener('click', () => {
       currentMonth--;
       if (currentMonth < 0) {
         currentMonth = 11;
         currentYear--;
       }
-      generateCalendar();
+      createCalendarGrid();
       loadEvents();
     });
 
@@ -180,7 +178,7 @@
         currentMonth = 0;
         currentYear++;
       }
-      generateCalendar();
+      createCalendarGrid();
       loadEvents();
     });
   </script>
