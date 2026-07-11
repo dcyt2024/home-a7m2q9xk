@@ -2,12 +2,12 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>E1003 Calendar</title>
   <style>
     :root{--bg:#fff;--line:#d8d8d8;--text:#111;--event:#efefef;--today:#111}
     *{box-sizing:border-box}
-    html,body{margin:0;width:100%;height:100%;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+    html,body{margin:0;width:100%;height:100%;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;touch-action:manipulation}
     body{display:flex;flex-direction:column;min-height:100vh}
     .topbar{display:flex;justify-content:center;align-items:center;padding:14px 24px 10px;border-bottom:1px solid var(--line)}
     .title{font-size:32px;font-weight:700;line-height:1}
@@ -19,41 +19,72 @@
     .date{font-size:22px;font-weight:600;line-height:1;color:var(--text);text-align:center;width:100%;display:block}
     .other .date{color:#9a9a9a}
     .today .date-badge{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;padding:0 8px;border-radius:999px;background:var(--today);color:#fff;margin:0 auto}
-    .events{margin-top:8px;display:flex;flex-direction:column;gap:4px}
-    .event{background:var(--event);border:1px solid #cfcfcf;border-radius:8px;padding:6px 8px;line-height:1.15;overflow:hidden}
-    .event-line{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
-    .event-time,.event-title{font-size:18px;font-weight:700;line-height:1;white-space:nowrap}
+    .events{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+    .event{background:var(--event);border:1px solid #cfcfcf;border-radius:8px;padding:8px 10px;line-height:1.15;overflow:hidden}
+    .event-line{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+    .event-time,.event-title{font-size:27px;font-weight:700;line-height:1;white-space:nowrap}
+    .controls{display:flex;gap:8px;justify-content:center;align-items:center;padding:8px 0 12px;border-top:1px solid var(--line);background:#fff}
+    .controls button{font-size:18px;font-weight:700;padding:8px 14px;border:1px solid #cfcfcf;border-radius:8px;background:#f8f8f8;color:#111}
+    .controls button:active{transform:scale(.98)}
   </style>
 </head>
 <body>
-  <header class="topbar"><div class="title">July 2026</div></header>
-  <main class="calendar" aria-label="July 2026 calendar">
-    <div class="dow">Sun</div><div class="dow">Mon</div><div class="dow">Tue</div><div class="dow">Wed</div><div class="dow">Thu</div><div class="dow">Fri</div><div class="dow">Sat</div>
-    <section class="cell other"><div class="date">28</div></section><section class="cell other"><div class="date">29</div></section><section class="cell other"><div class="date">30</div></section><section class="cell"><div class="date">1</div></section><section class="cell"><div class="date">2</div></section><section class="cell"><div class="date">3</div></section><section class="cell"><div class="date">4</div></section>
-    <section class="cell"><div class="date">5</div></section><section class="cell"><div class="date">6</div></section><section class="cell"><div class="date">7</div></section><section class="cell"><div class="date">8</div></section><section class="cell"><div class="date">9</div></section><section class="cell"><div class="date">10</div></section><section class="cell today"><div class="date"><span class="date-badge">11</span></div></section>
-    <section class="cell"><div class="date">12</div><div class="events"><article class="event"><div class="event-line"><span class="event-time">14:00-14:30</span><span class="event-title">Test</span></div></article></div></section><section class="cell"><div class="date">13</div></section><section class="cell"><div class="date">14</div></section><section class="cell"><div class="date">15</div></section><section class="cell"><div class="date">16</div></section><section class="cell"><div class="date">17</div></section><section class="cell"><div class="date">18</div></section>
-    <section class="cell"><div class="date">19</div></section><section class="cell"><div class="date">20</div></section><section class="cell"><div class="date">21</div></section><section class="cell"><div class="date">22</div></section><section class="cell"><div class="date">23</div></section><section class="cell"><div class="date">24</div></section><section class="cell"><div class="date">25</div></section>
-    <section class="cell"><div class="date">26</div></section><section class="cell"><div class="date">27</div></section><section class="cell"><div class="date">28</div></section><section class="cell"><div class="date">29</div></section><section class="cell"><div class="date">30</div></section><section class="cell"><div class="date">31</div></section><section class="cell other"><div class="date">1</div></section>
-  </main>
+  <header class="topbar"><div class="title" id="monthTitle">July 2026</div></header>
+  <main class="calendar" id="calendar" aria-label="Monthly calendar"></main>
+  <div class="controls">
+    <button id="prevBtn">Prev</button>
+    <button id="todayBtn">Today</button>
+    <button id="nextBtn">Next</button>
+  </div>
 
   <script>
     const CALENDAR_ID = 'dcyt122024@gmail.com';
     const API_KEY = 'AIzaSyAUhbzcmS9bdGjTwxNmi3RP2MuuOK7U-Io';
+    const monthTitle = document.getElementById('monthTitle');
+    const calendar = document.getElementById('calendar');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const todayBtn = document.getElementById('todayBtn');
 
-    const cellMap = new Map();
-    const firstGridDate = new Date(2026, 5, 28);
-    [...document.querySelectorAll('.cell')].forEach((cell, i) => {
-      const dt = new Date(firstGridDate);
-      dt.setDate(firstGridDate.getDate() + i);
-      const k = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
-      cellMap.set(k, cell);
-    });
+    const now = new Date();
+    let viewDate = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const fmtTime = d => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const pad = n => String(n).padStart(2, '0');
+    const keyOf = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const monthLabel = d => d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+    const startOfMonth = d => new Date(d.getFullYear(), d.getMonth(), 1);
+    const endOfMonth = d => new Date(d.getFullYear(), d.getMonth()+1, 1);
+    const fmtTime = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+    function buildGrid(monthDate) {
+      monthTitle.textContent = monthLabel(monthDate);
+      calendar.innerHTML = '';
+      ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(x => {
+        const el = document.createElement('div');
+        el.className = 'dow';
+        el.textContent = x;
+        calendar.appendChild(el);
+      });
+      const first = startOfMonth(monthDate);
+      const start = new Date(first);
+      start.setDate(first.getDate() - first.getDay());
+      for (let i = 0; i < 42; i++) {
+        const dt = new Date(start);
+        dt.setDate(start.getDate() + i);
+        const cell = document.createElement('section');
+        cell.className = 'cell' + (dt.getMonth() !== monthDate.getMonth() ? ' other' : '');
+        cell.dataset.date = keyOf(dt);
+        const dateDiv = document.createElement('div');
+        dateDiv.className = 'date';
+        dateDiv.innerHTML = dt.toDateString() === new Date().toDateString() ? `<span class="date-badge">${dt.getDate()}</span>` : `${dt.getDate()}`;
+        cell.appendChild(dateDiv);
+        calendar.appendChild(cell);
+      }
+    }
 
     async function loadEvents() {
-      const timeMin = new Date(2026, 6, 1).toISOString();
-      const timeMax = new Date(2026, 7, 1).toISOString();
+      const timeMin = startOfMonth(viewDate).toISOString();
+      const timeMax = endOfMonth(viewDate).toISOString();
       const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events`);
       url.searchParams.set('key', API_KEY);
       url.searchParams.set('timeMin', timeMin);
@@ -61,22 +92,21 @@
       url.searchParams.set('singleEvents', 'true');
       url.searchParams.set('orderBy', 'startTime');
       url.searchParams.set('maxResults', '250');
-
       const res = await fetch(url.toString());
       if (!res.ok) throw new Error('Google Calendar API error');
       const data = await res.json();
       const grouped = new Map();
-
       (data.items || []).forEach(ev => {
         const start = ev.start.dateTime || ev.start.date;
         const day = start.slice(0, 10);
         if (!grouped.has(day)) grouped.set(day, []);
         grouped.get(day).push(ev);
       });
-
-      for (const [day, items] of grouped.entries()) {
-        const cell = cellMap.get(day);
-        if (!cell) continue;
+      [...calendar.querySelectorAll('.cell')].forEach(cell => {
+        const day = cell.dataset.date;
+        if (!day) return;
+        const list = grouped.get(day);
+        if (!list || !list.length) return;
         let container = cell.querySelector('.events');
         if (!container) {
           container = document.createElement('div');
@@ -84,7 +114,7 @@
           cell.appendChild(container);
         }
         container.innerHTML = '';
-        items.slice(0, 3).forEach(ev => {
+        list.slice(0, 3).forEach(ev => {
           const start = ev.start.dateTime || ev.start.date;
           const end = ev.end.dateTime || ev.end.date;
           const t1 = ev.start.dateTime ? fmtTime(new Date(start)) : 'All day';
@@ -94,10 +124,14 @@
           article.innerHTML = `<div class="event-line"><span class="event-time">${t1}${t2 ? '-' + t2 : ''}</span><span class="event-title">${ev.summary || '(No title)'}</span></div>`;
           container.appendChild(article);
         });
-      }
+      });
     }
 
-    loadEvents().catch(() => {});
+    function refresh() { buildGrid(viewDate); loadEvents().catch(() => {}); }
+    prevBtn.onclick = () => { viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1); refresh(); };
+    nextBtn.onclick = () => { viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1); refresh(); };
+    todayBtn.onclick = () => { const n = new Date(); viewDate = new Date(n.getFullYear(), n.getMonth(), 1); refresh(); };
+    refresh();
   </script>
 </body>
 </html>
