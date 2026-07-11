@@ -5,51 +5,56 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>E1003 Calendar</title>
   <style>
-    :root{--bg:#fff;--line:#d8d8d8;--text:#111;--event:#efefef;--today:#0066cc}
+    :root{--bg:#fff;--line:#d8d8d8;--text:#111;--event:#efefef;--today:#0066cc;--error:#d32f2f}
     *{box-sizing:border-box}
     html,body{margin:0;width:100%;height:100%;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
     body{display:flex;flex-direction:column;min-height:100vh}
     
     .topbar{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line)}
     .title{font-size:28px;font-weight:700}
-    .nav-btn{font-size:24px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#f5f5f5}
+    .nav-btn{font-size:28px;width:50px;height:50px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#f0f0f0}
 
     .calendar{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:48px repeat(6,1fr);flex:1;min-height:0}
     .dow,.cell{border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
     .dow:nth-child(7),.cell:nth-child(7n){border-right:none}
     .dow{display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;background:#fafafa;color:#333}
 
-    .cell{position:relative;padding:8px 6px;min-height:0;overflow:hidden;cursor:pointer}
+    .cell{position:relative;padding:8px 6px;min-height:0;overflow:hidden}
     .date{font-size:20px;font-weight:600;text-align:center;display:block;margin-bottom:4px}
     .other .date{color:#aaa}
     .today .date{background:var(--today);color:#fff;width:32px;height:32px;line-height:32px;border-radius:50%;margin:0 auto}
 
     .events{margin-top:4px;display:flex;flex-direction:column;gap:3px}
-    .event{background:var(--event);border:1px solid #ddd;border-radius:6px;padding:5px 7px;font-size:15px;line-height:1.2;overflow:hidden}
-    .event-time{font-weight:700;color:#0066cc}
+    .event{background:var(--event);border:1px solid #ddd;border-radius:6px;padding:5px 7px;font-size:15px;line-height:1.2}
+
+    #status {padding:12px 20px; background:#fff3cd; color:#856404; font-size:16px; border-bottom:1px solid #ffeaa7; text-align:center;}
   </style>
 </head>
 <body>
   <header class="topbar">
     <button class="nav-btn" id="prev">‹</button>
-    <div class="title" id="monthTitle">2026 年 7 月</div>
+    <div class="title" id="monthTitle">載入中...</div>
     <button class="nav-btn" id="next">›</button>
   </header>
 
-  <main class="calendar" id="calendar" aria-label="Calendar"></main>
+  <div id="status">正在初始化月曆...</div>
+  <main class="calendar" id="calendar"></main>
 
   <script>
     const CALENDAR_ID = 'dcyt122024@gmail.com';
-    const API_KEY = 'AIzaSyAUhbzcmS9bdGjTwxNmi3RP2MuuOK7U-Io';   // ←←← 在這裡貼上你的 Google API Key
+    const API_KEY = 'AIzaSyAYBpOB6UoMYeAAmwTM_1KdYEzwtv6zXiE';   // ←←← 在這裡貼上你剛剛取得的 API Key
 
-    let currentDate = new Date(2026, 6, 1);   // 預設 2026 年 7 月
+    let currentDate = new Date(2026, 6, 1); // 預設從2026年7月開始
+
+    function updateStatus(msg, isError = false) {
+      const status = document.getElementById('status');
+      status.textContent = msg;
+      status.style.background = isError ? '#ffebee' : '#fff3cd';
+      status.style.color = isError ? '#d32f2f' : '#856404';
+    }
 
     function formatMonthTitle(date) {
       return `${date.getFullYear()} 年 ${date.getMonth() + 1} 月`;
-    }
-
-    function getDaysInMonth(year, month) {
-      return new Date(year, month + 1, 0).getDate();
     }
 
     function generateCalendar() {
@@ -58,9 +63,9 @@
       
       document.getElementById('monthTitle').textContent = formatMonthTitle(currentDate);
 
-      const firstDay = new Date(year, month, 1).getDay(); // 星期幾
-      const daysInMonth = getDaysInMonth(year, month);
-      const daysInPrevMonth = getDaysInMonth(year, month - 1);
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const daysInPrevMonth = new Date(year, month, 0).getDate();
 
       const calendar = document.getElementById('calendar');
       calendar.innerHTML = '';
@@ -74,57 +79,53 @@
         calendar.appendChild(div);
       });
 
-      // 上個月的剩餘日期
+      // 上個月補位
       for (let i = firstDay - 1; i >= 0; i--) {
         const cell = createCell(daysInPrevMonth - i, true);
         calendar.appendChild(cell);
       }
 
-      // 本月日期
+      // 本月
       for (let day = 1; day <= daysInMonth; day++) {
         const cell = createCell(day, false, year, month);
         calendar.appendChild(cell);
       }
 
-      // 下個月的補位
-      const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
-      const remaining = totalCells - (firstDay + daysInMonth);
-      for (let day = 1; day <= remaining; day++) {
+      // 下個月補位
+      const total = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+      for (let day = 1; day <= total - firstDay - daysInMonth; day++) {
         const cell = createCell(day, true);
         calendar.appendChild(cell);
       }
     }
 
-    function createCell(day, isOtherMonth, year = null, month = null) {
+    function createCell(day, isOther, year=null, month=null) {
       const cell = document.createElement('section');
-      cell.className = `cell ${isOtherMonth ? 'other' : ''}`;
+      cell.className = `cell ${isOther ? 'other' : ''}`;
       
       const dateDiv = document.createElement('div');
       dateDiv.className = 'date';
       dateDiv.textContent = day;
       cell.appendChild(dateDiv);
 
-      // 今天標記
       const today = new Date();
-      if (!isOtherMonth && 
-          year === today.getFullYear() && 
-          month === today.getMonth() && 
-          day === today.getDate()) {
+      if (!isOther && year === today.getFullYear() && month === today.getMonth() && day === today.getDate()) {
         cell.classList.add('today');
       }
-
       return cell;
     }
 
     async function loadEvents() {
-      if (!API_KEY || API_KEY === '你的 API Key') {
-        console.warn('請填入 Google API Key');
+      if (!API_KEY || API_KEY.includes('你的API_KEY')) {
+        updateStatus('❌ 請先把 API Key 貼上程式碼', true);
         return;
       }
 
+      updateStatus('正在從 Google 載入事件...');
+
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
-      
+
       const timeMin = new Date(year, month, 1).toISOString();
       const timeMax = new Date(year, month + 1, 1).toISOString();
 
@@ -137,7 +138,7 @@
       url.searchParams.set('maxResults', '250');
 
       try {
-        const res = await fetch(url.toString());
+        const res = await fetch(url);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         
         const data = await res.json();
@@ -150,14 +151,10 @@
           grouped.get(dayKey).push(ev);
         });
 
-        // 把事件塞進對應格子
         grouped.forEach((events, dayKey) => {
-          const day = parseInt(dayKey.slice(8, 10));
+          const dayNum = parseInt(dayKey.slice(8));
           const cells = document.querySelectorAll('.cell:not(.other)');
-          const cell = Array.from(cells).find(c => {
-            const d = parseInt(c.querySelector('.date').textContent);
-            return d === day;
-          });
+          const cell = Array.from(cells).find(c => parseInt(c.querySelector('.date').textContent) === dayNum);
 
           if (cell) {
             let container = cell.querySelector('.events');
@@ -170,51 +167,40 @@
 
             events.slice(0, 3).forEach(ev => {
               const startTime = ev.start.dateTime ? new Date(ev.start.dateTime) : null;
-              const endTime = ev.end.dateTime ? new Date(ev.end.dateTime) : null;
-              
-              const timeStr = startTime 
-                ? `${startTime.getHours().toString().padStart(2,'0')}:${startTime.getMinutes().toString().padStart(2,'0')}` 
-                : '全天';
+              const timeStr = startTime ? 
+                `${startTime.getHours().toString().padStart(2,'0')}:${startTime.getMinutes().toString().padStart(2,'0')}` : '全天';
 
               const article = document.createElement('article');
               article.className = 'event';
-              article.innerHTML = `
-                <span class="event-time">${timeStr}</span> 
-                ${ev.summary || '(無標題)'}
-              `;
+              article.innerHTML = `<span class="event-time">${timeStr}</span> ${ev.summary || '(無標題)'}`;
               container.appendChild(article);
             });
           }
         });
-      } catch (e) {
-        console.error('載入事件失敗:', e);
+
+        updateStatus(`✅ 已載入 ${grouped.size} 天的活動`);
+      } catch (err) {
+        console.error(err);
+        updateStatus('❌ 載入事件失敗，請檢查 API Key 或網路', true);
       }
     }
 
-    // 切換月份
-    function changeMonth(delta) {
-      currentDate.setMonth(currentDate.getMonth() + delta);
+    // 事件監聽
+    document.getElementById('prev').addEventListener('click', () => {
+      currentDate.setMonth(currentDate.getMonth() - 1);
       generateCalendar();
       loadEvents();
-    }
+    });
 
-    document.getElementById('prev').addEventListener('click', () => changeMonth(-1));
-    document.getElementById('next').addEventListener('click', () => changeMonth(1));
+    document.getElementById('next').addEventListener('click', () => {
+      currentDate.setMonth(currentDate.getMonth() + 1);
+      generateCalendar();
+      loadEvents();
+    });
 
     // 初始化
     generateCalendar();
     loadEvents();
-
-    // 支援左右滑動切換（觸控）
-    let touchStartX = 0;
-    document.getElementById('calendar').addEventListener('touchstart', e => {
-      touchStartX = e.changedTouches[0].screenX;
-    });
-    document.getElementById('calendar').addEventListener('touchend', e => {
-      const touchEndX = e.changedTouches[0].screenX;
-      if (touchEndX - touchStartX > 80) changeMonth(-1);
-      if (touchStartX - touchEndX > 80) changeMonth(1);
-    });
   </script>
 </body>
 </html>
