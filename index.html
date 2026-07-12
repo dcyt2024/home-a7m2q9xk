@@ -20,22 +20,30 @@
     .other .date{color:#9a9a9a}
     .today .date-badge{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;padding:0 8px;border-radius:999px;background:var(--today);color:#fff;margin:0 auto}
     .events{margin-top:8px;display:flex;flex-direction:column;gap:4px}
-    .event{background:var(--event);border:1px solid #cfcfcf;border-radius:8px;padding:6px 8px;line-height:1.2;overflow:hidden}
-    .event-line{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
     
-    /* 修改這裡：分開設定時間與標題的換行規則 */
+    /* 調整主要事件外框 */
+    .event{background:var(--event);border:1px solid #cfcfcf;border-radius:8px;padding:6px 8px;overflow:hidden}
+    
+    /* 關鍵修改：將 flex 改為 block，徹底解放換行限制 */
+    .event-line{display:block;width:100%}
+    
+    /* 時間後方留一點行內空隙 */
     .event-time {
       font-size: 18px;
       font-weight: 700;
-      line-height: 1.2;
-      white-space: nowrap; /* 時間保持不換行 */
+      line-height: 1.3;
+      white-space: nowrap;
+      margin-right: 6px; 
     }
+    
+    /* 標題強制換行與斷字設定 */
     .event-title {
       font-size: 18px;
       font-weight: 700;
-      line-height: 1.2;
-      word-break: break-all; /* 允許英文單字在邊界斷行 */
-      /* 移除了原本的 white-space: nowrap，讓文字能自然換行 */
+      line-height: 1.3;
+      white-space: normal !important; /* 強制覆蓋任何繼承的 nowrap */
+      word-break: break-all;         /* 遇到長英文單字強制斷行 */
+      word-wrap: break-word;
     }
   </style>
 </head>
