@@ -16,22 +16,15 @@
     .dow:nth-child(7),.cell:nth-child(7n){border-right:none}
     .dow{display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;letter-spacing:.2px;background:#fafafa;color:#333}
     
-    /* 縮減日期格子的上下內邊距，騰出更多空間給活動 */
     .cell{position:relative;padding:6px 6px 4px;min-height:0;overflow:hidden}
     .date{font-size:20px;font-weight:600;line-height:1;color:var(--text);text-align:center;width:100%;display:block}
     .other .date{color:#9a9a9a}
     .today .date-badge{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 6px;border-radius:999px;background:var(--today);color:#fff;margin:0 auto}
     
-    /* 縮小活動之間的間距 */
     .events{margin-top:4px;display:flex;flex-direction:column;gap:2px}
-    
-    /* 緊湊型活動外框 */
     .event{background:var(--event);border:1px solid #cfcfcf;border-radius:6px;padding:4px 6px;overflow:hidden}
-    
-    /* 重新使用彈性佈局，並允許內容換行 */
     .event-line{display:flex;flex-wrap:wrap;row-gap:2px;column-gap:6px;align-items:baseline;width:100%}
     
-    /* 調小時間字體，並保持單行 */
     .event-time {
       font-size: 14px;
       font-weight: 700;
@@ -39,10 +32,9 @@
       white-space: nowrap;
     }
     
-    /* 調小標題字體，允許自動換行與長單字切斷 */
     .event-title {
       flex: 1;
-      min-width: 80px; /* 確保剩餘空間太小時會直接換行 */
+      min-width: 80px;
       font-size: 14px;
       font-weight: 700;
       line-height: 1.2;
@@ -58,8 +50,8 @@
     <section class="cell other"><div class="date">28</div></section><section class="cell other"><div class="date">29</div></section><section class="cell other"><div class="date">30</div></section><section class="cell"><div class="date">1</div></section><section class="cell"><div class="date">2</div></section><section class="cell"><div class="date">3</div></section><section class="cell"><div class="date">4</div></section>
     <section class="cell"><div class="date">5</div></section><section class="cell"><div class="date">6</div></section><section class="cell"><div class="date">7</div></section><section class="cell"><div class="date">8</div></section><section class="cell"><div class="date">9</div></section><section class="cell"><div class="date">10</div></section><section class="cell today"><div class="date"><span class="date-badge">11</span></div></section>
     
-    <!-- 測試：同一天擺放兩個活動 -->
-    <section class="cell"><div class="date">12</div><div class="events"><article class="event"><div class="event-line"><span class="event-time">14:00-14:30</span><span class="event-title">Test the event</span></div></article><article class="event"><div class="event-line"><span class="event-time">16:00-17:00</span><span class="event-title">Second Event</span></div></article></div></section>
+    <!-- 已將 12 號的假資料完全移除，交給 JavaScript 100% 動態載入 -->
+    <section class="cell"><div class="date">12</div></section>
     
     <section class="cell"><div class="date">13</div></section><section class="cell"><div class="date">14</div></section><section class="cell"><div class="date">15</div></section><section class="cell"><div class="date">16</div></section><section class="cell"><div class="date">17</div></section><section class="cell"><div class="date">18</div></section>
     <section class="cell"><div class="date">19</div></section><section class="cell"><div class="date">20</div></section><section class="cell"><div class="date">21</div></section><section class="cell"><div class="date">22</div></section><section class="cell"><div class="date">23</div></section><section class="cell"><div class="date">24</div></section><section class="cell"><div class="date">25</div></section>
@@ -68,7 +60,7 @@
 
   <script>
     const CALENDAR_ID = 'dcyt122024@gmail.com';
-    const API_KEY = 'AIzaSyAYBpOB6UoMYeAAmwTM_1KdYEzwtv6zXiE';
+    const API_KEY = 'AIzaSyAYBpOB6UoMYeAAmwTM_1KdYEzwtv6zXiE'; // 請確保這裡填入了正確的金鑰
 
     const cellMap = new Map();
     const firstGridDate = new Date(2026, 5, 28);
@@ -82,6 +74,7 @@
     const fmtTime = d => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 
     async function loadEvents() {
+      // 為了防止 E1003 強制快取 API，我們在網址後方加入隨機時間戳記（cache buster）
       const timeMin = new Date(2026, 6, 1).toISOString();
       const timeMax = new Date(2026, 7, 1).toISOString();
       const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events`);
@@ -91,6 +84,7 @@
       url.searchParams.set('singleEvents', 'true');
       url.searchParams.set('orderBy', 'startTime');
       url.searchParams.set('maxResults', '250');
+      url.searchParams.set('t', new Date().getTime()); // 強制每一次都抓取最新資料
 
       const res = await fetch(url.toString());
       if (!res.ok) throw new Error('Google Calendar API error');
@@ -115,7 +109,6 @@
         }
         container.innerHTML = '';
         
-        // 這裡維持最多顯示前 3 個活動
         items.slice(0, 3).forEach(ev => {
           const start = ev.start.dateTime || ev.start.date;
           const end = ev.end.dateTime || ev.end.date;
@@ -123,8 +116,6 @@
           const t2 = ev.start.dateTime ? fmtTime(new Date(end)) : '';
           const article = document.createElement('article');
           article.className = 'event';
-          
-          /* JavaScript 生成的部分也同步改回 <span> 彈性結構 */
           article.innerHTML = `<div class="event-line"><span class="event-time">${t1}${t2 ? '-' + t2 : ''}</span><span class="event-title">${ev.summary || '(No title)'}</span></div>`;
           container.appendChild(article);
         });
