@@ -24,26 +24,29 @@
     /* 調整主要事件外框 */
     .event{background:var(--event);border:1px solid #cfcfcf;border-radius:8px;padding:6px 8px;overflow:hidden}
     
-    /* 關鍵修改：將 flex 改為 block，徹底解放換行限制 */
+    /* 終極修改：徹底放棄 flex 佈局，直接改用區塊佈局 */
     .event-line{display:block;width:100%}
     
-    /* 時間後方留一點行內空隙 */
+    /* 時間改為區塊元素，強制自己佔用獨立一整行，絕不跟標題並排 */
     .event-time {
+      display: block;
       font-size: 18px;
       font-weight: 700;
       line-height: 1.3;
       white-space: nowrap;
-      margin-right: 6px; 
+      margin-bottom: 2px; /* 跟下方的標題留一點點小空隙 */
     }
     
-    /* 標題強制換行與斷字設定 */
+    /* 標題也改為區塊元素，徹底解開換行鎖定 */
     .event-title {
+      display: block;
+      width: 100% !important;
       font-size: 18px;
       font-weight: 700;
       line-height: 1.3;
-      white-space: normal !important; /* 強制覆蓋任何繼承的 nowrap */
-      word-break: break-all;         /* 遇到長英文單字強制斷行 */
-      word-wrap: break-word;
+      white-space: normal !important;   /* 覆蓋所有 nowrap 設定 */
+      word-break: break-all !important; /* 針對英文字符強制在格子邊緣切斷換行 */
+      overflow-wrap: break-word !important;
     }
   </style>
 </head>
@@ -53,7 +56,11 @@
     <div class="dow">Sun</div><div class="dow">Mon</div><div class="dow">Tue</div><div class="dow">Wed</div><div class="dow">Thu</div><div class="dow">Fri</div><div class="dow">Sat</div>
     <section class="cell other"><div class="date">28</div></section><section class="cell other"><div class="date">29</div></section><section class="cell other"><div class="date">30</div></section><section class="cell"><div class="date">1</div></section><section class="cell"><div class="date">2</div></section><section class="cell"><div class="date">3</div></section><section class="cell"><div class="date">4</div></section>
     <section class="cell"><div class="date">5</div></section><section class="cell"><div class="date">6</div></section><section class="cell"><div class="date">7</div></section><section class="cell"><div class="date">8</div></section><section class="cell"><div class="date">9</div></section><section class="cell"><div class="date">10</div></section><section class="cell today"><div class="date"><span class="date-badge">11</span></div></section>
-    <section class="cell"><div class="date">12</div><div class="events"><article class="event"><div class="event-line"><span class="event-time">14:00-14:30</span><span class="event-title">Test</span></div></article></div></section><section class="cell"><div class="date">13</div></section><section class="cell"><div class="date">14</div></section><section class="cell"><div class="date">15</div></section><section class="cell"><div class="date">16</div></section><section class="cell"><div class="date">17</div></section><section class="cell"><div class="date">18</div></section>
+    
+    <!-- 這裡的手動測試代碼也同步更新成強制換行的結構 -->
+    <section class="cell"><div class="date">12</div><div class="events"><article class="event"><div class="event-line"><div class="event-time">14:00-14:30</div><div class="event-title">Test the event</div></div></article></div></section>
+    
+    <section class="cell"><div class="date">13</div></section><section class="cell"><div class="date">14</div></section><section class="cell"><div class="date">15</div></section><section class="cell"><div class="date">16</div></section><section class="cell"><div class="date">17</div></section><section class="cell"><div class="date">18</div></section>
     <section class="cell"><div class="date">19</div></section><section class="cell"><div class="date">20</div></section><section class="cell"><div class="date">21</div></section><section class="cell"><div class="date">22</div></section><section class="cell"><div class="date">23</div></section><section class="cell"><div class="date">24</div></section><section class="cell"><div class="date">25</div></section>
     <section class="cell"><div class="date">26</div></section><section class="cell"><div class="date">27</div></section><section class="cell"><div class="date">28</div></section><section class="cell"><div class="date">29</div></section><section class="cell"><div class="date">30</div></section><section class="cell"><div class="date">31</div></section><section class="cell other"><div class="date">1</div></section>
   </main>
@@ -113,7 +120,9 @@
           const t2 = ev.start.dateTime ? fmtTime(new Date(end)) : '';
           const article = document.createElement('article');
           article.className = 'event';
-          article.innerHTML = `<div class="event-line"><span class="event-time">${t1}${t2 ? '-' + t2 : ''}</span><span class="event-title">${ev.summary || '(No title)'}</span></div>`;
+          
+          /* 同步修改 JavaScript 動態產生的 HTML 標籤，改用 <div> 確保換行 */
+          article.innerHTML = `<div class="event-line"><div class="event-time">${t1}${t2 ? '-' + t2 : ''}</div><div class="event-title">${ev.summary || '(No title)'}</div></div>`;
           container.appendChild(article);
         });
       }
