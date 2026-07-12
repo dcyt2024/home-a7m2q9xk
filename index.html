@@ -11,6 +11,7 @@
       --text:#111;
       --event:#efefef;
       --today:#111;
+      --debug:#fff8d6;
     }
     *{box-sizing:border-box}
     html,body{
@@ -25,6 +26,15 @@
       display:flex;
       flex-direction:column;
       min-height:100vh;
+    }
+    .debug{
+      white-space:pre-wrap;
+      padding:12px;
+      background:var(--debug);
+      border-bottom:1px solid #ddd;
+      font-size:14px;
+      line-height:1.4;
+      display:none;
     }
     .topbar{
       display:flex;
@@ -150,9 +160,11 @@
   </style>
 </head>
 <body>
+  <div id="debug" class="debug"></div>
+
   <header class="topbar">
     <div class="title">July 2026</div>
-    <div class="build">BUILD NUMBER: E1003-BUILD-20260712-02</div>
+    <div class="build">BUILD NUMBER: E1003-BUILD-20260712-06</div>
   </header>
 
   <main class="calendar" aria-label="July 2026 calendar">
@@ -180,25 +192,7 @@
     <section class="cell"><span class="date">10</span></section>
     <section class="cell today"><span class="date-badge">11</span></section>
 
-    <section class="cell">
-      <span class="date">12</span>
-      <div class="events">
-        <article class="event">
-          <span class="event-line event-time">14:00-14:30</span>
-          <span class="event-line event-title">Test the event</span>
-        </article>
-        <article class="event">
-          <span class="event-line event-time">16:00-16:30</span>
-          <span class="event-line event-title">Second event</span>
-        </article>
-        <article class="event">
-          <span class="event-line event-time">18:00-18:30</span>
-          <span class="event-line event-title">Third event</span>
-        </article>
-        <div class="more">+2 more</div>
-      </div>
-    </section>
-
+    <section class="cell"><span class="date">12</span><div class="events"></div></section>
     <section class="cell"><span class="date">13</span></section>
     <section class="cell"><span class="date">14</span></section>
     <section class="cell"><span class="date">15</span></section>
@@ -224,9 +218,16 @@
   </main>
 
   <script>
-    const CALENDAR_ID = "dcyt122024gmail.com";
+    const CALENDAR_ID = "dcyt122024@gmail.com";
     const API_KEY = "AIzaSyAYBpOB6UoMYeAAmwTM_1KdYEzwtv6zXiE";
-    const BUILD_NUMBER = "E1003-BUILD-20260712-02";
+    const BUILD_NUMBER = "E1003-BUILD-20260712-06";
+
+    const debug = (msg) => {
+      const el = document.getElementById("debug");
+      el.style.display = "block";
+      el.textContent += msg + "\n";
+      console.log(msg);
+    };
 
     const cellMap = new Map();
     const firstGridDate = new Date(2026, 5, 28);
@@ -241,6 +242,9 @@
     const fmtTime = d => String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
 
     async function loadEvents() {
+      debug("Build: " + BUILD_NUMBER);
+      debug("Loading events...");
+
       const timeMin = new Date(2026, 6, 1).toISOString();
       const timeMax = new Date(2026, 7, 1).toISOString();
       const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events`);
@@ -252,8 +256,22 @@
       url.searchParams.set("maxResults", "250");
 
       const res = await fetch(url.toString());
-      if (!res.ok) throw new Error("Google Calendar API error");
-      const data = await res.json();
+      const text = await res.text();
+
+      debug("HTTP status: " + res.status);
+
+      if (!res.ok) {
+        debug(text);
+        throw new Error(`Google Calendar API error: ${res.status}`);
+      }
+
+      const data = JSON.parse(text);
+      debug("Items: " + (data.items ? data.items.length : 0));
+
+      if (!data.items || !data.items.length) {
+        debug("No events returned.");
+        return;
+      }
 
       const grouped = new Map();
 
@@ -277,9 +295,7 @@
 
         container.innerHTML = "";
 
-        const visibleItems = items.slice(0, 3);
-
-        visibleItems.forEach(ev => {
+        items.slice(0, 3).forEach(ev => {
           const start = ev.start.dateTime || ev.start.date;
           const end = ev.end.dateTime || ev.end.date;
           const t1 = ev.start.dateTime ? fmtTime(new Date(start)) : "All day";
@@ -301,11 +317,9 @@
           container.appendChild(more);
         }
       }
-
-      console.log("Build:", BUILD_NUMBER);
     }
 
-    loadEvents().catch(err => console.error(err));
+    loadEvents().catch(err => debug("ERROR: " + (err.message || String(err))));
   </script>
 </body>
 </html>
