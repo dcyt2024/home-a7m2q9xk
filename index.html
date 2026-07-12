@@ -9,57 +9,149 @@
     *{box-sizing:border-box}
     html,body{margin:0;width:100%;height:100%;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
     body{display:flex;flex-direction:column;min-height:100vh}
-    .topbar{display:flex;justify-content:center;align-items:center;padding:14px 24px 10px;border-bottom:1px solid var(--line)}
-    .title{font-size:32px;font-weight:700;line-height:1}
-    .calendar{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:56px repeat(5,1fr);flex:1;min-height:0}
+    
+    .topbar{display:flex;justify-content:center;align-items:center;padding:12px 20px 8px;border-bottom:1px solid var(--line)}
+    .title{font-size:28px;font-weight:700;line-height:1}
+    .build{font-size:12px;color:#888;margin-left:8px;align-self:flex-end;padding-bottom:2px}
+
+    .calendar{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:48px repeat(5,1fr);flex:1;min-height:0}
     .dow,.cell{border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
     .dow:nth-child(7),.cell:nth-child(7n){border-right:none}
-    .dow{display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;letter-spacing:.2px;background:#fafafa;color:#333}
-    .cell{position:relative;padding:6px 6px 4px;min-height:0;overflow:hidden}
-    .date{font-size:20px;font-weight:600;line-height:1;color:var(--text);text-align:center;width:100%;display:block}
-    .other .date{color:#9a9a9a}
-    .today .date-badge{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 6px;border-radius:999px;background:var(--today);color:#fff;margin:0 auto}
-    
-    .events{margin-top:4px;display:flex;flex-direction:column;gap:2px}
-    .event{background:var(--event);border:1px solid #cfcfcf;border-radius:6px;padding:4px 6px;overflow:hidden}
-    
-    /* 舊設備大絕招：放棄所有 Flex 屬性，改用標準區塊顯示 */
-    .event-line{display:block;width:100%;text-align:left}
-    
-    /* 時間：改用 inline-block，寬度自動，後面留空隙 */
-    .event-time {
-      display: inline-block;
-      font-size: 14px;
-      font-weight: 700;
-      line-height: 1.3;
-      white-space: nowrap;
-      margin-right: 6px;
-      vertical-align: top;
+    .dow{display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;background:#fafafa;color:#333}
+
+    .cell{
+      position:relative;
+      padding:8px 8px 6px;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      overflow:hidden;
     }
     
-    /* 標題：改用 inline-block，允許正常換行，舊瀏覽器 100% 支援 */
-    .event-title {
-      display: inline;
-      font-size: 14px;
-      font-weight: 700;
-      line-height: 1.3;
-      white-space: normal !important;
-      word-break: break-all !important;
-      word-wrap: break-word !important;
-      vertical-align: top;
+    .date{
+      flex-shrink:0;
+      font-size:20px;
+      font-weight:600;
+      line-height:1;
+      color:var(--text);
+      text-align:center;
+      width:100%;
+      display:block;
+    }
+    .other .date{color:#9a9a9a}
+    
+    .today .date-badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:32px;
+      height:32px;
+      padding:0 8px;
+      border-radius:999px;
+      background:var(--today);
+      color:#fff;
+      margin:0 auto;
+    }
+
+    .events{
+      margin-top:0;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      flex:1;
+      overflow-y:auto;
+      scrollbar-width:none;
+    }
+    .events::-webkit-scrollbar{display:none}
+
+    /* 事件樣式 */
+    .event{
+      background:var(--event);
+      border:1px solid #cfcfcf;
+      border-radius:6px;
+      padding:5px 7px;
+      overflow:hidden;
+    }
+    
+    .event-line{display:block;width:100%}
+    
+    .event-time{
+      display:block;
+      font-size:15px;
+      font-weight:700;
+      line-height:1.2;
+      white-space:nowrap;
+      margin-bottom:1px;
+    }
+    
+    .event-title{
+      display:block;
+      width:100% !important;
+      font-size:15px;
+      font-weight:700;
+      line-height:1.25;
+      white-space:normal !important;
+      word-break:break-all !important;
+      overflow-wrap:break-word !important;
     }
   </style>
 </head>
 <body>
-  <header class="topbar"><div class="title">July 2026</div></header>
+  <header class="topbar">
+    <div class="title">July 2026</div>
+    <div class="build">Build 20250712-01</div>
+  </header>
+  
   <main class="calendar" aria-label="July 2026 calendar">
     <div class="dow">Sun</div><div class="dow">Mon</div><div class="dow">Tue</div><div class="dow">Wed</div><div class="dow">Thu</div><div class="dow">Fri</div><div class="dow">Sat</div>
-    <section class="cell other"><div class="date">28</div></section><section class="cell other"><div class="date">29</div></section><section class="cell other"><div class="date">30</div></section><section class="cell"><div class="date">1</div></section><section class="cell"><div class="date">2</div></section><section class="cell"><div class="date">3</div></section><section class="cell"><div class="date">4</div></section>
-    <section class="cell"><div class="date">5</div></section><section class="cell"><div class="date">6</div></section><section class="cell"><div class="date">7</div></section><section class="cell"><div class="date">8</div></section><section class="cell"><div class="date">9</div></section><section class="cell"><div class="date">10</div></section><section class="cell today"><div class="date"><span class="date-badge">11</span></div></section>
-    <section class="cell"><div class="date">12</div></section>
-    <section class="cell"><div class="date">13</div></section><section class="cell"><div class="date">14</div></section><section class="cell"><div class="date">15</div></section><section class="cell"><div class="date">16</div></section><section class="cell"><div class="date">17</div></section><section class="cell"><div class="date">18</div></section>
-    <section class="cell"><div class="date">19</div></section><section class="cell"><div class="date">20</div></section><section class="cell"><div class="date">21</div></section><section class="cell"><div class="date">22</div></section><section class="cell"><div class="date">23</div></section><section class="cell"><div class="date">24</div></section><section class="cell"><div class="date">25</div></section>
-    <section class="cell"><div class="date">26</div></section><section class="cell"><div class="date">27</div></section><section class="cell"><div class="date">28</div></section><section class="cell"><div class="date">29</div></section><section class="cell"><div class="date">30</div></section><section class="cell"><div class="date">31</div></section><section class="cell other"><div class="date">1</div></section>
+    <section class="cell other"><div class="date">28</div></section>
+    <section class="cell other"><div class="date">29</div></section>
+    <section class="cell other"><div class="date">30</div></section>
+    <section class="cell"><div class="date">1</div></section>
+    <section class="cell"><div class="date">2</div></section>
+    <section class="cell"><div class="date">3</div></section>
+    <section class="cell"><div class="date">4</div></section>
+    
+    <section class="cell"><div class="date">5</div></section>
+    <section class="cell"><div class="date">6</div></section>
+    <section class="cell"><div class="date">7</div></section>
+    <section class="cell"><div class="date">8</div></section>
+    <section class="cell"><div class="date">9</div></section>
+    <section class="cell"><div class="date">10</div></section>
+    <section class="cell today"><div class="date"><span class="date-badge">11</span></div></section>
+    
+    <!-- 測試用：同一天兩個活動 -->
+    <section class="cell">
+      <div class="date">12</div>
+      <div class="events">
+        <article class="event"><div class="event-line"><div class="event-time">09:00-10:00</div><div class="event-title">團隊會議</div></div></article>
+        <article class="event"><div class="event-line"><div class="event-time">14:30-15:30</div><div class="event-title">客戶簡報</div></div></article>
+      </div>
+    </section>
+    
+    <section class="cell"><div class="date">13</div></section>
+    <section class="cell"><div class="date">14</div></section>
+    <section class="cell"><div class="date">15</div></section>
+    <section class="cell"><div class="date">16</div></section>
+    <section class="cell"><div class="date">17</div></section>
+    <section class="cell"><div class="date">18</div></section>
+    
+    <section class="cell"><div class="date">19</div></section>
+    <section class="cell"><div class="date">20</div></section>
+    <section class="cell"><div class="date">21</div></section>
+    <section class="cell"><div class="date">22</div></section>
+    <section class="cell"><div class="date">23</div></section>
+    <section class="cell"><div class="date">24</div></section>
+    <section class="cell"><div class="date">25</div></section>
+    
+    <section class="cell"><div class="date">26</div></section>
+    <section class="cell"><div class="date">27</div></section>
+    <section class="cell"><div class="date">28</div></section>
+    <section class="cell"><div class="date">29</div></section>
+    <section class="cell"><div class="date">30</div></section>
+    <section class="cell"><div class="date">31</div></section>
+    <section class="cell other"><div class="date">1</div></section>
   </main>
 
   <script>
@@ -68,6 +160,7 @@
 
     const cellMap = new Map();
     const firstGridDate = new Date(2026, 5, 28);
+    
     [...document.querySelectorAll('.cell')].forEach((cell, i) => {
       const dt = new Date(firstGridDate);
       dt.setDate(firstGridDate.getDate() + i);
@@ -81,6 +174,7 @@
       const timeMin = new Date(2026, 6, 1).toISOString();
       const timeMax = new Date(2026, 7, 1).toISOString();
       const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events`);
+      
       url.searchParams.set('key', API_KEY);
       url.searchParams.set('timeMin', timeMin);
       url.searchParams.set('timeMax', timeMax);
@@ -88,42 +182,54 @@
       url.searchParams.set('orderBy', 'startTime');
       url.searchParams.set('maxResults', '250');
 
-      const res = await fetch(url.toString());
-      if (!res.ok) throw new Error('Google Calendar API error');
-      const data = await res.json();
-      const grouped = new Map();
+      try {
+        const res = await fetch(url.toString());
+        if (!res.ok) throw new Error('Google Calendar API error');
+        const data = await res.json();
+        const grouped = new Map();
 
-      (data.items || []).forEach(ev => {
-        const start = ev.start.dateTime || ev.start.date;
-        const day = start.slice(0, 10);
-        if (!grouped.has(day)) grouped.set(day, []);
-        grouped.get(day).push(ev);
-      });
-
-      for (const [day, items] of grouped.entries()) {
-        const cell = cellMap.get(day);
-        if (!cell) continue;
-        let container = cell.querySelector('.events');
-        if (!container) {
-          container = document.createElement('div');
-          container.className = 'events';
-          cell.appendChild(container);
-        }
-        container.innerHTML = '';
-        items.slice(0, 3).forEach(ev => {
+        (data.items || []).forEach(ev => {
           const start = ev.start.dateTime || ev.start.date;
-          const end = ev.end.dateTime || ev.end.date;
-          const t1 = ev.start.dateTime ? fmtTime(new Date(start)) : 'All day';
-          const t2 = ev.start.dateTime ? fmtTime(new Date(end)) : '';
-          const article = document.createElement('article');
-          article.className = 'event';
-          article.innerHTML = `<div class="event-line"><span class="event-time">${t1}${t2 ? '-' + t2 : ''}</span><span class="event-title">${ev.summary || '(No title)'}</span></div>`;
-          container.appendChild(article);
+          const day = start.slice(0, 10);
+          if (!grouped.has(day)) grouped.set(day, []);
+          grouped.get(day).push(ev);
         });
+
+        for (const [day, items] of grouped.entries()) {
+          const cell = cellMap.get(day);
+          if (!cell) continue;
+          
+          let container = cell.querySelector('.events');
+          if (!container) {
+            container = document.createElement('div');
+            container.className = 'events';
+            cell.appendChild(container);
+          }
+          container.innerHTML = '';
+          
+          // 小螢幕建議最多顯示 2~3 個
+          items.slice(0, 3).forEach(ev => {
+            const start = ev.start.dateTime || ev.start.date;
+            const end = ev.end.dateTime || ev.end.date;
+            const t1 = ev.start.dateTime ? fmtTime(new Date(start)) : 'All day';
+            const t2 = ev.start.dateTime ? fmtTime(new Date(end)) : '';
+            
+            const article = document.createElement('article');
+            article.className = 'event';
+            article.innerHTML = `
+              <div class="event-line">
+                <div class="event-time">${t1}${t2 ? '-' + t2 : ''}</div>
+                <div class="event-title">${ev.summary || '(No title)'}</div>
+              </div>`;
+            container.appendChild(article);
+          });
+        }
+      } catch (e) {
+        console.error(e);
       }
     }
 
-    loadEvents().catch(() => {});
+    loadEvents();
   </script>
 </body>
 </html>
