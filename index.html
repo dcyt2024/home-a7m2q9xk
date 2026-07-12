@@ -11,7 +11,6 @@
       --text:#111;
       --event:#efefef;
       --today:#111;
-      --debug:#fff8d6;
     }
     *{box-sizing:border-box}
     html,body{
@@ -26,15 +25,6 @@
       display:flex;
       flex-direction:column;
       min-height:100vh;
-    }
-    .debug{
-      white-space:pre-wrap;
-      padding:12px;
-      background:var(--debug);
-      border-bottom:1px solid #ddd;
-      font-size:14px;
-      line-height:1.4;
-      display:none;
     }
     .topbar{
       display:flex;
@@ -160,11 +150,9 @@
   </style>
 </head>
 <body>
-  <div id="debug" class="debug"></div>
-
   <header class="topbar">
     <div class="title">July 2026</div>
-    <div class="build">BUILD NUMBER: E1003-BUILD-20260712-06</div>
+    <div class="build">BUILD NUMBER: E1003-BUILD-20260712-08</div>
   </header>
 
   <main class="calendar" aria-label="July 2026 calendar">
@@ -220,14 +208,10 @@
   <script>
     const CALENDAR_ID = "dcyt122024@gmail.com";
     const API_KEY = "AIzaSyAYBpOB6UoMYeAAmwTM_1KdYEzwtv6zXiE";
-    const BUILD_NUMBER = "E1003-BUILD-20260712-06";
+    const BUILD_NUMBER = "E1003-BUILD-20260712-08";
+    const MAX_EVENTS_PER_DAY = 3;
 
-    const debug = (msg) => {
-      const el = document.getElementById("debug");
-      el.style.display = "block";
-      el.textContent += msg + "\n";
-      console.log(msg);
-    };
+    console.log("Calendar build:", BUILD_NUMBER);
 
     const cellMap = new Map();
     const firstGridDate = new Date(2026, 5, 28);
@@ -235,71 +219,36 @@
     document.querySelectorAll(".cell").forEach((cell, i) => {
       const dt = new Date(firstGridDate);
       dt.setDate(firstGridDate.getDate() + i);
-      const k = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
-      cellMap.set(k, cell);
+      const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+      cellMap.set(key, cell);
     });
 
-    const fmtTime = d => String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+    const fmtTime = (d) =>
+      String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
 
-    async function loadEvents() {
-      debug("Build: " + BUILD_NUMBER);
-      debug("Loading events...");
-
-      const timeMin = new Date(2026, 6, 1).toISOString();
-      const timeMax = new Date(2026, 7, 1).toISOString();
-      const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events`);
-      url.searchParams.set("key", API_KEY);
-      url.searchParams.set("timeMin", timeMin);
-      url.searchParams.set("timeMax", timeMax);
-      url.searchParams.set("singleEvents", "true");
-      url.searchParams.set("orderBy", "startTime");
-      url.searchParams.set("maxResults", "250");
-
-      const res = await fetch(url.toString());
-      const text = await res.text();
-
-      debug("HTTP status: " + res.status);
-
-      if (!res.ok) {
-        debug(text);
-        throw new Error(`Google Calendar API error: ${res.status}`);
+    function getOrCreateEventsContainer(cell) {
+      let container = cell.querySelector(".events");
+      if (!container) {
+        container = document.createElement("div");
+        container.className = "events";
+        cell.appendChild(container);
       }
+      return container;
+    }
 
-      const data = JSON.parse(text);
-      debug("Items: " + (data.items ? data.items.length : 0));
+    function renderDayEvents(cell, items) {
+      const container = getOrCreateEventsContainer(cell);
+      container.innerHTML = "";
 
-      if (!data.items || !data.items.length) {
-        debug("No events returned.");
-        return;
-      }
+      const visible = items.slice(0, MAX_EVENTS_PER_DAY);
 
-      const grouped = new Map();
-
-      data.items.forEach(ev => {
-        const start = ev.start.dateTime || ev.start.date;
-        const day = start.slice(0, 10);
-        if (!grouped.has(day)) grouped.set(day, []);
-        grouped.get(day).push(ev);
-      });
-
-      for (const [day, items] of grouped.entries()) {
-        const cell = cellMap.get(day);
-        if (!cell) continue;
-
-        let container = cell.querySelector(".events");
-        if (!container) {
-          container = document.createElement("div");
-          container.className = "events";
-          cell.appendChild(container);
-        }
-
-        container.innerHTML = "";
-
-        items.slice(0, 3).forEach(ev => {
-          const start = ev.start.dateTime || ev.start.date;
-          const end = ev.end.dateTime || ev.end.date;
-          const t1 = ev.start.dateTime ? fmtTime(new Date(start)) : "All day";
-          const t2 = ev.start.dateTime ? fmtTime(new Date(end)) : "";
+      visible.forEach((ev) => {
+        try {
+          const start = ev.start?.dateTime || ev.start?.date;
+          const end = ev.end?.dateTime || ev.end?.date;
+          const isTimed = Boolean(ev.start?.dateTime);
+          const t1 = isTimed ? fmtTime(new Date(start)) : "All day";
+          const t2 = isTimed ? fmtTime(new Date(end)) : "";
 
           const article = document.createElement("article");
           article.className = "event";
@@ -308,18 +257,74 @@
             <span class="event-line event-title">${ev.summary || "No title"}</span>
           `;
           container.appendChild(article);
-        });
-
-        if (items.length > 3) {
-          const more = document.createElement("div");
-          more.className = "more";
-          more.textContent = `+${items.length - 3} more`;
-          container.appendChild(more);
+        } catch (e) {
+          console.error("Failed to render one event:", e, ev);
         }
+      });
+
+      if (items.length > MAX_EVENTS_PER_DAY) {
+        const more = document.createElement("div");
+        more.className = "more";
+        more.textContent = `+${items.length - MAX_EVENTS_PER_DAY} more`;
+        container.appendChild(more);
       }
     }
 
-    loadEvents().catch(err => debug("ERROR: " + (err.message || String(err))));
+    async function fetchMonthEvents() {
+      const timeMin = new Date(2026, 6, 1).toISOString();
+      const timeMax = new Date(2026, 7, 1).toISOString();
+
+      const url = new URL(
+        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events`
+      );
+      url.searchParams.set("key", API_KEY);
+      url.searchParams.set("timeMin", timeMin);
+      url.searchParams.set("timeMax", timeMax);
+      url.searchParams.set("singleEvents", "true");
+      url.searchParams.set("orderBy", "startTime");
+      url.searchParams.set("maxResults", "250");
+
+      const res = await fetch(url.toString());
+      const rawText = await res.text();
+
+      if (!res.ok) {
+        console.error("Google Calendar API error", res.status, rawText);
+        throw new Error(`Google Calendar API error: ${res.status}`);
+      }
+
+      return JSON.parse(rawText);
+    }
+
+    function groupEventsByDay(items) {
+      const grouped = new Map();
+      items.forEach((ev) => {
+        const start = ev.start?.dateTime || ev.start?.date;
+        if (!start) return;
+        const day = start.slice(0, 10);
+        if (!grouped.has(day)) grouped.set(day, []);
+        grouped.get(day).push(ev);
+      });
+      return grouped;
+    }
+
+    async function loadEvents() {
+      const data = await fetchMonthEvents();
+      const items = data.items || [];
+
+      console.log("Fetched items:", items.length);
+
+      const grouped = groupEventsByDay(items);
+
+      for (const [day, dayItems] of grouped.entries()) {
+        const cell = cellMap.get(day);
+        if (!cell) continue;
+        renderDayEvents(cell, dayItems);
+      }
+    }
+
+    loadEvents().catch((err) => {
+      console.error("loadEvents failed:", err);
+    });
   </script>
 </body>
 </html>
